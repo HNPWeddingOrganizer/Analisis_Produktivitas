@@ -4,11 +4,8 @@
   <meta charset="UTF-8">
   <title>Produktivitas Operator</title>
   
-  <!-- CDN Chart.js & Google Fonts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-  
-  <!-- CDN Bootstrap Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
   <style>
@@ -33,7 +30,7 @@
     .btn-danger:hover { background-color: var(--danger-hover); }
     .btn-warning { background-color: var(--warning); color: #fff; }
     .btn-outline { background-color: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 6px 12px; font-size: 12px; }
-    .btn-block { display: flex; width: 100%; padding: 15px; font-size: 16px; margin-top: 15px; }
+    .btn-block { display: flex; width: 100%; padding: 15px; font-size: 16px; margin-top: 15px; justify-content: center; }
 
     input[type="text"], input[type="date"] { font-family: 'Poppins', sans-serif; padding: 12px; width: 100%; border: 1px solid #d1d3e2; border-radius: 8px; box-sizing: border-box; outline: none; margin-bottom: 15px; transition: 0.3s; }
     input:focus { border-color: var(--primary); box-shadow: 0 0 0 0.2rem rgba(78,115,223,0.25); }
@@ -43,24 +40,20 @@
     #clock { font-size: 32px; font-weight: 600; text-align: center; color: var(--primary); margin-bottom: 5px; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); }
     #status { text-align: center; font-size: 14px; font-weight: 600; height: 20px; margin-bottom: 15px; }
     
-    /* Tombol Kustom Hapus */
     .custom-btn-wrapper { position: relative; display: inline-block; margin: 5px; }
     .delete-badge { position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; width: 22px; height: 22px; border-radius: 50%; font-size: 14px; line-height: 22px; text-align: center; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: 0.2s; z-index: 10; display: flex; align-items: center; justify-content: center; }
     .delete-badge:hover { transform: scale(1.1); background: var(--danger-hover); }
     
-    /* Tabel Modern */
     .table-responsive { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; background: white; border-radius: 8px; overflow: hidden; }
     th, td { border-bottom: 1px solid #e3e6f0; padding: 10px; text-align: left; }
     th { background-color: var(--primary); color: white; font-weight: 600; }
     tr:hover td { background-color: #f8f9fc; }
     
-    /* Screen Management */
     .screen { display: none; }
     .screen.active { display: block; animation: fadeIn 0.4s ease; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Konfigurasi Print F4 */
     @media print {
       @page { size: 215mm 330mm; margin: 15mm; }
       body { background: white; }
@@ -151,7 +144,7 @@
         <h4 style="margin-top:0; color: var(--primary);"><i class="bi bi-keyboard-fill"></i> Ketik Manual:</h4>
         <div style="display:flex; gap:10px;">
           <input type="text" id="manualInput" placeholder="Ketik aktivitas secara manual..." style="margin-bottom:0;">
-          <button onclick="recordManual()" class="btn-primary"><i class="bi bi-floppy-fill"></i> Simpan</button>
+          <button onclick="recordManual()" class="btn-primary"><i class="bi bi-floppy-fill"></i> Catat</button>
         </div>
         <hr style="margin: 20px 0; border: 0; border-top: 1px solid #e3e6f0;">
         <h4 style="margin-top:0; color: var(--primary);"><i class="bi bi-plus-square-fill"></i> Tambah Tombol Baru:</h4>
@@ -159,6 +152,13 @@
           <input type="text" id="newButtonName" placeholder="Nama tombol baru..." style="margin-bottom:0;">
           <button onclick="addNewButton()" class="btn-warning"><i class="bi bi-plus-lg"></i> Tambah</button>
         </div>
+      </div>
+
+      <!-- TOMBOL SIMPAN & SELESAI PENGAMATAN -->
+      <div style="margin-top: 20px;">
+        <button class="btn-success btn-block" onclick="finishObservation()" style="font-size: 18px; padding: 20px;">
+          <i class="bi bi-check-circle-fill"></i> Selesai & Simpan Pengamatan
+        </button>
       </div>
     </div>
 
@@ -217,27 +217,22 @@
   <script>
     const scriptURL = 'https://script.google.com/macros/s/AKfycbyAzxt8-YkKUfALNmDi2GM5Pax6-8d69Xio3MMq04echfldh4bUiXFIGe0dVxs7umEv/exec';
 
-    // Data Global Sesi Ini
     let sessionData = { pengamat: "", tempat: "", tanggal: "", hari: "" };
 
-    // Jam
     setInterval(() => {
       document.getElementById('clock').innerText = new Date().toLocaleTimeString('id-ID');
     }, 1000);
 
-    // Navigasi Screen
     function switchScreen(screenId) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById(screenId).classList.add('active');
     }
 
-    // Mendapatkan Nama Hari dari Date
     function getHariFromDate(dateString) {
       const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
       return days[new Date(dateString).getDay()];
     }
 
-    // Mulai Observasi
     function startObservation() {
       const pengamat = document.getElementById('inputPengamat').value.trim();
       const tempat = document.getElementById('inputTempat').value.trim();
@@ -253,13 +248,11 @@
       sessionData.tanggal = tglRaw;
       sessionData.hari = getHariFromDate(tglRaw);
 
-      // Update Label UI
       document.getElementById('lblPengamat').innerText = sessionData.pengamat;
       document.getElementById('lblTempat').innerText = sessionData.tempat;
       document.getElementById('lblTanggal').innerText = sessionData.tanggal;
       document.getElementById('lblHari').innerText = sessionData.hari;
       
-      // Update Area Print
       document.getElementById('printPengamat').innerText = sessionData.pengamat;
       document.getElementById('printTempat').innerText = sessionData.tempat;
       document.getElementById('printHariTanggal').innerText = `${sessionData.hari}, ${sessionData.tanggal}`;
@@ -268,7 +261,6 @@
       toggleView('chart');
     }
 
-    // Setup Chart
     const ctx = document.getElementById('productivityChart').getContext('2d');
     let chart = new Chart(ctx, {
       type: 'line',
@@ -276,7 +268,6 @@
       options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { type: 'category', labels: ['Idle Time (Waktu Menganggur)', 'Produktif'], offset: true } } }
     });
 
-    // FUNGSI MENCATAT DATA
     function recordEvent(keterangan) {
       const timeStr = new Date().toLocaleTimeString('id-ID');
       
@@ -297,7 +288,6 @@
       kirimDataApi('record', { ...sessionData, waktu: timeStr, keterangan });
     }
 
-    // FUNGSI HAPUS 1 TITIK
     function deleteDataPoint(btn, waktuStr) {
       if(!confirm(`Yakin hapus data pada waktu ${waktuStr}?`)) return;
       btn.closest('tr').remove();
@@ -316,7 +306,6 @@
       document.querySelectorAll('#dataTable tbody tr').forEach((row, idx) => { row.querySelector('.row-num').innerText = idx + 1; });
     }
 
-    // API Komunikasi
     function kirimDataApi(action, data) {
       const status = document.getElementById('status');
       status.innerHTML = action === 'delete' ? '<i class="bi bi-arrow-repeat spin"></i> Menghapus data...' : '<i class="bi bi-arrow-repeat spin"></i> Menyimpan data...';
@@ -331,7 +320,6 @@
         .catch(() => { status.innerHTML = '<i class="bi bi-x-circle-fill"></i> Gagal terhubung!'; status.style.color = '#e74a3b'; });
     }
 
-    // FETCH HISTORY DATA
     function loadHistory() {
       switchScreen('screen-history');
       const table = document.getElementById('historyTable');
@@ -355,7 +343,6 @@
               return;
             }
             
-            // Loop dari index 1 (melewati header sheet)
             for(let i = 1; i < data.length; i++) {
               let tgl = data[i][1];
               if (tgl && tgl.includes("T")) { tgl = tgl.split("T")[0]; }
@@ -380,7 +367,28 @@
         });
     }
 
-    // FUNGSI LAINNYA
+    // FUNGSI UNTUK MENYELESAIKAN PENGAMATAN (Fitur Baru)
+    function finishObservation() {
+      if(confirm("Apakah Anda yakin ingin menyelesaikan sesi pengamatan ini? Seluruh data yang terekam telah aman dan akan masuk ke dalam riwayat.")) {
+        const status = document.getElementById('status');
+        status.innerHTML = '<i class="bi bi-check-circle-fill"></i> Pengamatan selesai dan tersimpan di riwayat!';
+        status.style.color = '#1cc88a';
+
+        setTimeout(() => {
+          // Bersihkan data UI saat ini agar siap untuk pengamatan berikutnya
+          document.querySelector('#dataTable tbody').innerHTML = '';
+          chart.data.labels = []; 
+          chart.data.datasets[0].data = []; 
+          chart.update();
+          
+          sessionData = { pengamat: "", tempat: "", tanggal: "", hari: "" };
+          
+          switchScreen('screen-home');
+          status.innerHTML = '';
+        }, 1500);
+      }
+    }
+
     function resetData() {
       if (confirm("PERINGATAN: Yakin reset/hapus SELURUH data di spreadsheet?")) {
         document.querySelector('#dataTable tbody').innerHTML = '';
