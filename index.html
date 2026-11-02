@@ -10,13 +10,15 @@
     button { padding: 10px 15px; margin: 5px; cursor: pointer; border: 1px solid #007bff; background: #007bff; color: white; border-radius: 4px; }
     button:hover { background: #0056b3; }
     input[type="text"] { padding: 10px; width: 60%; border: 1px solid #ccc; border-radius: 4px; }
+    .input-group { display: flex; gap: 10px; margin-bottom: 10px; }
+    .input-group input { width: 100%; }
     #clock { font-size: 28px; font-weight: bold; text-align: center; color: #333; margin-bottom: 10px; }
     #status { text-align: center; font-size: 14px; color: green; height: 20px; margin-bottom: 10px; }
     
     /* Konfigurasi Kertas F4 & Tabel Print */
     #table-container { display: none; margin-top: 20px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    th, td { border: 1px solid black; padding: 10px; text-align: left; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+    th, td { border: 1px solid black; padding: 8px; text-align: left; }
     th { background-color: #f2f2f2; }
 
     @media print {
@@ -33,6 +35,16 @@
   <div class="no-print">
     <div id="clock">00:00:00</div>
     <div id="status"></div>
+    
+    <!-- Informasi Tempat dan Hari -->
+    <div class="card">
+      <h4>Data Pengamatan:</h4>
+      <div class="input-group">
+        <input type="text" id="inputTempat" placeholder="Masukkan Nama Tempat...">
+        <input type="text" id="inputHari" placeholder="Masukkan Hari (Contoh: Senin)...">
+      </div>
+      <button onclick="resetData()" style="background: #dc3545; border-color:#dc3545;">🗑️ Reset Data</button>
+    </div>
     
     <div style="text-align: center; margin-bottom: 20px;">
       <button onclick="toggleView('chart')" style="background: #28a745; border-color:#28a745;">Lihat Grafik</button>
@@ -59,7 +71,7 @@
       
       <hr style="margin: 15px 0;">
       
-      <h4>Tambah Tombol Baru (Sesuai Kebutuhan):</h4>
+      <h4>Tambah Tombol Baru:</h4>
       <input type="text" id="newButtonName" placeholder="Nama tombol baru...">
       <button onclick="addNewButton()" style="background: #ffc107; color: black; border-color:#ffc107;">+ Tambah Tombol</button>
     </div>
@@ -68,12 +80,18 @@
   <!-- Area Laporan (Tabel) -->
   <div id="table-container">
     <h2 style="text-align: center;">Laporan Pengamatan Produktivitas</h2>
+    <div style="margin-bottom: 10px;">
+      <strong>Tempat:</strong> <span id="printTempat">-</span> <br>
+      <strong>Hari:</strong> <span id="printHari">-</span>
+    </div>
     <table id="dataTable">
       <thead>
         <tr>
-          <th style="width: 10%; text-align: center;">No</th>
-          <th style="width: 25%;">Waktu</th>
-          <th style="width: 65%;">Keterangan</th>
+          <th style="width: 5%; text-align: center;">No</th>
+          <th style="width: 15%;">Hari</th>
+          <th style="width: 20%;">Tempat</th>
+          <th style="width: 15%;">Waktu</th>
+          <th style="width: 45%;">Keterangan</th>
         </tr>
       </thead>
       <tbody>
@@ -83,7 +101,7 @@
 
   <script>
     // URL Web App Anda
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbwn2Tt07CFiWscOmuBYAJewYh6nhqDmWTx-Iqj7B446eAb-SeHb7AyRCPeN9nbupShD/exec';
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbwzNVcvqjDzfBaq--gM4Q6dv58YRpUASjeSIbxJH9w4ffBRxKqA0nQ7pUamzOQVHd0z/exec';
 
     // Jam Realtime
     function updateClock() {
@@ -97,20 +115,9 @@
     const ctx = document.getElementById('productivityChart').getContext('2d');
     const yCategories = ['Idle Time (Waktu Menganggur)', 'Produktif'];
     
-    const chart = new Chart(ctx, {
+    let chart = new Chart(ctx, {
       type: 'line',
-      data: {
-        labels: [],
-        datasets: [{
-          label: 'Aktivitas Operator',
-          data: [],
-          borderColor: '#007bff',
-          backgroundColor: '#ff3333',
-          showLine: false, 
-          pointRadius: 6,
-          pointHoverRadius: 8
-        }]
-      },
+      data: { labels: [], datasets: [{ label: 'Aktivitas Operator', data: [], borderColor: '#007bff', backgroundColor: '#ff3333', showLine: false, pointRadius: 6, pointHoverRadius: 8 }] },
       options: { responsive: true, scales: { y: { type: 'category', labels: yCategories, offset: true } } }
     });
 
@@ -118,13 +125,13 @@
 
     // Fungsi Utama Mencatat Data
     function recordEvent(keterangan) {
+      const tempat = document.getElementById('inputTempat').value || "-";
+      const hari = document.getElementById('inputHari').value || "-";
       const now = new Date();
       const timeStr = now.toLocaleTimeString('id-ID');
       
       // Update Y-axis grafik
-      if (!chart.options.scales.y.labels.includes(keterangan)) {
-        chart.options.scales.y.labels.push(keterangan);
-      }
+      if (!chart.options.scales.y.labels.includes(keterangan)) { chart.options.scales.y.labels.push(keterangan); }
 
       // Masukkan ke Grafik
       chart.data.labels.push(timeStr);
@@ -135,20 +142,23 @@
       dataCount++;
       const tbody = document.querySelector('#dataTable tbody');
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td style="text-align:center;">${dataCount}</td><td>${timeStr}</td><td>${keterangan}</td>`;
+      tr.innerHTML = `<td style="text-align:center;">${dataCount}</td><td>${hari}</td><td>${tempat}</td><td>${timeStr}</td><td>${keterangan}</td>`;
       tbody.appendChild(tr);
 
-      // Kirim data ke Google Sheets via Fetch API
-      kirimKeGoogleSheets(timeStr, keterangan);
+      // Kirim data ke Google Sheets
+      kirimKeGoogleSheets(hari, tempat, timeStr, keterangan);
     }
 
-    // Mengirim Data menggunakan Fetch (scriptURL)
-    function kirimKeGoogleSheets(waktu, keterangan) {
+    // Mengirim Data ke Sheets
+    function kirimKeGoogleSheets(hari, tempat, waktu, keterangan) {
       const statusText = document.getElementById('status');
       statusText.innerText = 'Menyimpan data...';
       statusText.style.color = 'orange';
 
       const formData = new FormData();
+      formData.append('action', 'record');
+      formData.append('hari', hari);
+      formData.append('tempat', tempat);
       formData.append('waktu', waktu);
       formData.append('keterangan', keterangan);
 
@@ -159,22 +169,49 @@
           setTimeout(() => statusText.innerText = '', 3000);
         })
         .catch(error => {
-          console.error('Error!', error.message);
           statusText.innerText = 'Gagal menyimpan data!';
           statusText.style.color = 'red';
         });
     }
 
-    // Fungsi Input Manual
-    function recordManual() {
-      const input = document.getElementById('manualInput');
-      if (input.value.trim() !== '') {
-        recordEvent(input.value.trim());
-        input.value = '';
+    // Fungsi Reset Data dengan Konfirmasi
+    function resetData() {
+      const isConfirmed = confirm("⚠️ PERINGATAN: Apakah Anda yakin ingin mereset/menghapus seluruh data pengamatan pada hari ini di grafik, tabel, dan Spreadsheet?");
+      
+      if (isConfirmed) {
+        // Reset UI lokal (Grafik dan Tabel)
+        document.querySelector('#dataTable tbody').innerHTML = '';
+        chart.data.labels = [];
+        chart.data.datasets[0].data = [];
+        chart.update();
+        dataCount = 0;
+
+        // Reset data di Spreadsheet via API
+        const statusText = document.getElementById('status');
+        statusText.innerText = 'Mereset data...';
+        statusText.style.color = 'orange';
+
+        const formData = new FormData();
+        formData.append('action', 'reset');
+
+        fetch(scriptURL, { method: 'POST', body: formData })
+          .then(response => {
+            statusText.innerText = 'Data berhasil direset!';
+            statusText.style.color = 'blue';
+            setTimeout(() => statusText.innerText = '', 3000);
+          })
+          .catch(error => {
+            statusText.innerText = 'Gagal mereset data!';
+            statusText.style.color = 'red';
+          });
       }
     }
 
-    // Fungsi Tambah Tombol
+    // Fungsi Input Manual & Tambah Tombol
+    function recordManual() {
+      const input = document.getElementById('manualInput');
+      if (input.value.trim() !== '') { recordEvent(input.value.trim()); input.value = ''; }
+    }
     function addNewButton() {
       const name = document.getElementById('newButtonName').value.trim();
       if (name !== '') {
@@ -187,7 +224,7 @@
       }
     }
 
-    // Navigasi Tampilan
+    // Navigasi Tampilan dan Cetak
     function toggleView(view) {
       if (view === 'chart') {
         document.getElementById('chart-container').style.display = 'block';
@@ -195,6 +232,11 @@
       } else {
         document.getElementById('chart-container').style.display = 'none';
         document.getElementById('table-container').style.display = 'block';
+        
+        // Memasukkan inputan tempat & hari ke header cetak
+        document.getElementById('printTempat').innerText = document.getElementById('inputTempat').value || "-";
+        document.getElementById('printHari').innerText = document.getElementById('inputHari').value || "-";
+        
         setTimeout(() => { window.print(); }, 300);
       }
     }
