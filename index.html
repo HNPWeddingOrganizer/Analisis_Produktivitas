@@ -553,7 +553,7 @@
     }
 
     function resetData() {
-      if (confirm("PERINGATAN: Yakin hapus SELURUH riwayat di database? (Tombol ini mereset file Spreadsheet ke kosong)")) {
+      if (confirm("PERINGATAN: Yakin hapus SELURUH riwayat di database?")) {
         document.querySelector('#dataTable tbody').innerHTML = '';
         chart.data.labels = []; chart.data.datasets[0].data = []; chart.update();
         kirimDataApi('reset', {});
