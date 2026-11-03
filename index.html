@@ -2,7 +2,6 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <!-- TAG INI SANGAT PENTING UNTUK TAMPILAN HP -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Produktivitas Operator</title>
   
@@ -60,39 +59,26 @@
     .screen.active { display: block; animation: fadeIn 0.4s ease; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* LAYOUT BANTUAN */
     .info-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; padding: 15px 25px; }
     .view-toggle { text-align: center; margin-bottom: 20px; display: flex; justify-content: center; gap: 10px; }
     .input-manual-group { display: flex; gap: 10px; }
     .nav-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 
-    /* CSS KHUSUS HP / MOBILE RESPONSIVE */
     @media (max-width: 768px) {
       body { padding: 10px; }
       .card { padding: 15px; }
       #clock { font-size: 24px; }
-      
-      /* Susun Header Info ke Bawah */
       .info-header { flex-direction: column; align-items: flex-start; gap: 10px; }
       .info-header button { width: 100%; margin: 10px 0 0 0; }
-      
-      /* Susun Tombol Navigasi/Atas ke Bawah */
       .nav-top { flex-direction: column; gap: 10px; align-items: stretch; text-align: center; }
-      
-      /* Susun Tombol Toggle (Grafik/Tabel) ke Bawah */
       .view-toggle { flex-direction: column; }
       .view-toggle button { width: 100%; margin: 0; }
-      
-      /* Susun Input Manual ke Bawah */
       .input-manual-group { flex-direction: column; }
       .input-manual-group button { width: 100%; margin-left: 0; }
-      
-      /* Tombol aksi tabel di HP dibuat full width */
       .table-actions { display: flex; flex-direction: column; gap: 5px; }
       .table-actions button { width: 100%; margin: 0; }
     }
 
-    /* KONFIGURASI CETAK F4 (PRINT) */
     @media print {
       @page { size: 215mm 330mm; margin: 15mm; }
       body { background: white; color: black; font-family: Arial, sans-serif; padding:0; }
@@ -312,7 +298,7 @@
     const scriptURL = 'https://script.google.com/macros/s/AKfycbzpxQOrjl99D7kcOr6fVs_PcFg54q9bNESw2ko2corcrS7Q8pGpbl39SHr6BS13x6XR/exec';
    let sessionData = { pengamat: "", tempat: "", tanggal: "", hari: "" };
     let allHistoryData = []; 
-    let lastBaseActivity = "Produktif"; // Variabel baru pelacak tombol terakhir
+    let lastBaseActivity = "Produktif"; 
 
     let chart;
     let historyChart;
@@ -330,6 +316,25 @@
       const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
       return days[new Date(dateString).getDay()];
     }
+    
+    // FORMAT WAKTU HELPER FUNCTION
+    function formatWaktuFromSheet(waktuSheet) {
+      if(!waktuSheet) return "-";
+      let waktuStr = String(waktuSheet);
+      if(waktuStr.includes("T")) {
+          // Buat objek date lokal jika berupa format ISO Date (e.g. 1899-12-30T13:07:04.000Z)
+          let dateObj = new Date(waktuStr);
+          if(!isNaN(dateObj)){
+            // Ambil jam dan menit saja sesuai zona lokal, atau bisa padStart
+            let jam = String(dateObj.getHours()).padStart(2, '0');
+            let menit = String(dateObj.getMinutes()).padStart(2, '0');
+            let detik = String(dateObj.getSeconds()).padStart(2, '0');
+            return `${jam}.${menit}.${detik}`;
+          }
+      }
+      return waktuStr;
+    }
+
 
     // ========== BAGIAN OBSERVASI AKTIF ==========
     function startObservation() {
@@ -391,12 +396,13 @@
       tbody.innerHTML = '';
 
       filteredData.forEach((row, idx) => {
-        const waktu = row[5];
+        let waktu = row[5];
+        waktu = formatWaktuFromSheet(waktu);
+        
         const ket = row[6];
         
-        // Cek jika ini caption (mengandung " : ")
         let baseActivity = ket;
-        if (ket && ket.includes(" : ")) {
+        if (ket && String(ket).includes(" : ")) {
            baseActivity = ket.split(" : ")[0].trim();
         }
 
@@ -418,19 +424,14 @@
       toggleView('chart');
     }
 
-    // Fungsi pembantu untuk menentukan warna titik berdasarkan keterangan aktivitas
-// Fungsi pembantu untuk menentukan warna titik berdasarkan keterangan aktivitas
     function getColorByAktivitas(aktivitas) {
-      // PENGAMAN: Jika data masih kosong/belum ada aktivitas, kembalikan warna default agar tidak error
       if (!aktivitas) return '#f6c23e'; 
-      
-      // Menggunakan includes() agar warna tetap hijau/merah meski ada tambahan caption
-      if (aktivitas.includes('Produktif')) return '#1cc88a'; 
-      if (aktivitas.includes('Idle Time') || aktivitas.includes('Menganggur')) return '#e74a3b'; 
+      if (String(aktivitas).includes('Produktif')) return '#1cc88a'; 
+      if (String(aktivitas).includes('Idle Time') || String(aktivitas).includes('Menganggur')) return '#e74a3b'; 
       return '#f6c23e'; 
     }
 
-function initCharts() {
+    function initCharts() {
       const ctx = document.getElementById('productivityChart').getContext('2d');
       if(chart) chart.destroy(); 
       chart = new Chart(ctx, {
@@ -439,7 +440,7 @@ function initCharts() {
           labels: [], 
           datasets: [{ 
             label: 'Aktivitas', 
-            data: [], // Ini akan menyimpan objek {x, y, caption}
+            data: [], 
             borderColor: '#4e73df', 
             backgroundColor: 'rgba(78, 115, 223, 0.1)', 
             borderWidth: 2, 
@@ -449,7 +450,6 @@ function initCharts() {
             pointRadius: 3, 
             pointHoverRadius: 6,
             pointBackgroundColor: function(context) {
-              // Baca dari nilai y aslinya
               let aktivitas = context.dataset.data[context.dataIndex]?.y;
               return getColorByAktivitas(aktivitas);
             },
@@ -463,7 +463,6 @@ function initCharts() {
           responsive: true, 
           plugins: { 
             legend: { display: false },
-            // Tampilkan caption di tooltip jika ada
             tooltip: {
               callbacks: {
                 label: function(context) {
@@ -526,42 +525,42 @@ function initCharts() {
       });
     }
     
-    // Panggil saat halaman pertama dimuat
     window.onload = function() {
       initCharts();
     };
-  // Update fungsi recordEvent untuk menerima baseActivity dan fullCaption
+
     function recordEvent(keterangan, isBaseActivity = true, captionText = "") {
-      const timeStr = new Date().toLocaleTimeString('id-ID');
+      // Ambil waktu dari fungsi jam realtime web
+      let dateRaw = new Date();
+      let h = String(dateRaw.getHours()).padStart(2,'0');
+      let m = String(dateRaw.getMinutes()).padStart(2,'0');
+      let s = String(dateRaw.getSeconds()).padStart(2,'0');
+      const timeStr = `${h}.${m}.${s}`; // Gunakan titik sesuai di sheet
       
       let baseActivity = keterangan;
       let fullText = keterangan;
       
       if (isBaseActivity) {
-        lastBaseActivity = keterangan; // Simpan aktivitas dasar (contoh: "Produktif")
+        lastBaseActivity = keterangan; 
       } else {
-        baseActivity = lastBaseActivity; // Chart tetap di garis "Produktif"
-        fullText = lastBaseActivity + " : " + captionText; // Tabel dan Sheet menggunakan teks lengkap
+        baseActivity = lastBaseActivity; 
+        fullText = lastBaseActivity + " : " + captionText; 
       }
 
-      // Pastikan label dasar ada di sumbu Y chart
       if (!chart.options.scales.y.labels.includes(baseActivity)) { 
         chart.options.scales.y.labels.push(baseActivity); 
       }
       
       chart.data.labels.push(timeStr);
-      // Simpan sebagai object agar garis sejajar, tetapi menyimpan caption di latar belakang
       chart.data.datasets[0].data.push({ x: timeStr, y: baseActivity, caption: fullText });
       chart.update();
 
-      // Tabel menampilkan keterangan panjang
       const tbody = document.querySelector('#dataTable tbody');
       const tr = document.createElement('tr');
       tr.innerHTML = `<td style="text-align:center;" class="row-num"></td><td>${timeStr}</td><td>${fullText}</td><td class="no-print table-actions" style="text-align:center;"><button class="btn-outline" onclick="deleteDataPoint(this, '${timeStr}')"><i class="bi bi-trash-fill"></i> Hapus</button></td>`;
       tbody.appendChild(tr);
       updateTableNumbers();
 
-      // Spreadsheet menerima keterangan panjang
       kirimDataApi('record', { ...sessionData, waktu: timeStr, keterangan: fullText });
     }
 
@@ -569,7 +568,6 @@ function initCharts() {
       const input = document.getElementById('manualInput');
       const caption = input.value.trim();
       if (caption) { 
-        // Panggil recordEvent: null (karena tidak ada tombol baru yang diklik), false (bukan aktivitas dasar), dan kirim caption aslinya
         recordEvent(null, false, caption); 
         input.value = ''; 
       }
@@ -694,11 +692,13 @@ function initCharts() {
       tbody.innerHTML = '';
 
       filteredData.forEach((row, idx) => {
-        const waktu = row[5];
+        let waktu = row[5];
+        waktu = formatWaktuFromSheet(waktu);
+
         const ket = row[6];
         
         let baseActivity = ket;
-        if (ket && ket.includes(" : ")) {
+        if (ket && String(ket).includes(" : ")) {
            baseActivity = ket.split(" : ")[0].trim();
         }
 
@@ -767,7 +767,7 @@ function initCharts() {
     }
 
     function resetData() {
-      if (confirm("PERINGATAN: Yakin hapus SELURUH riwayat di database?")) {
+      if (confirm("PERINGATAN: Yakin hapus SELURUH riwayat di database? (Tombol ini mereset file Spreadsheet ke kosong)")) {
         document.querySelector('#dataTable tbody').innerHTML = '';
         chart.data.labels = []; chart.data.datasets[0].data = []; chart.update();
         kirimDataApi('reset', {});
