@@ -318,14 +318,34 @@
       document.getElementById(screenId).classList.add('active');
     }
 
-    // Hanya digunakan untuk Pengamatan Baru (Bukan untuk fungsi Lanjut)
+    // Fungsi untuk mendapatkan nama hari dari date string
     function getHariFromDate(dateString) {
       const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
       const dateObj = new Date(dateString);
       if (isNaN(dateObj)) return "-";
       return days[dateObj.getDay()];
     }
+
+    // ========== PERBAIKAN ZONA WAKTU TANGGAL (MEMPERBAIKI BUG TANGGAL BERUBAH) ==========
+    // Fungsi ini akan memaksa data UTC dari Google Sheets kembali ke format tanggal lokal (YYYY-MM-DD)
+    function getLocalDateString(tgl) {
+      if (!tgl) return "-";
+      let str = String(tgl);
+      
+      // Jika string sudah murni YYYY-MM-DD, biarkan
+      if (str.match(/^\d{4}-\d{2}-\d{2}$/)) return str;
+
+      let dateObj = new Date(str);
+      if (isNaN(dateObj)) return str; // Jika gagal di-parse, kembalikan apa adanya
+
+      let yyyy = dateObj.getFullYear();
+      let mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+      let dd = String(dateObj.getDate()).padStart(2, '0');
+      
+      return `${yyyy}-${mm}-${dd}`;
+    }
     
+    // Fungsi untuk mem-parsing jam dari Sheet
     function formatWaktuFromSheet(waktuSheet) {
       if(!waktuSheet) return "-";
       let waktuStr = String(waktuSheet);
@@ -341,10 +361,11 @@
       return waktuStr;
     }
 
+    // ========== BAGIAN OBSERVASI AKTIF ==========
     function startObservation() {
       const pengamat = document.getElementById('inputPengamat').value.trim();
       const tempat = document.getElementById('inputTempat').value.trim();
-      const tglRaw = document.getElementById('inputTanggal').value; // Mengambil string mentah (contoh: 2026-11-01)
+      const tglRaw = document.getElementById('inputTanggal').value; // e.g. 2026-11-02
       
       if (!pengamat || !tempat || !tglRaw) { alert("Harap isi semua data (Nama, Tempat, dan Tanggal)!"); return; }
 
@@ -371,16 +392,13 @@
       toggleView('chart');
     }
 
-    // Melanjutkan pengamatan Murni berdasarkan string tekstual tanggal yang ditarik dari Database
+    // Melanjutkan pengamatan berdasarkan tanggal riwayat
     function continueObservation(targetTglStr, pengamat, tempat, hari) {
-      // 1. Kunci identitas pengamatan.
-      // Kita langsung set string mentahnya (misal: "2026-11-01") dan harinya tanpa perlu perhitungan Date() lagi.
       sessionData.pengamat = pengamat;
       sessionData.tempat = tempat;
-      sessionData.tanggal = targetTglStr; 
+      sessionData.tanggal = targetTglStr; // TglStr sekarang dijamin "YYYY-MM-DD"
       sessionData.hari = hari;
 
-      // 2. Set Tampilan di Layar Observasi
       document.getElementById('lblPengamat').innerText = pengamat;
       document.getElementById('lblTempat').innerText = tempat;
       document.getElementById('lblTanggal').innerText = targetTglStr;
@@ -390,11 +408,10 @@
       document.getElementById('printTempat').innerText = tempat;
       document.getElementById('printHariTanggal').innerText = `${hari}, ${targetTglStr}`;
 
-      // 3. Filter data berdasarkan string exact match
       const filteredData = allHistoryData.filter((row, index) => {
         if(index === 0) return false; 
         let tgl = row[1];
-        let tglStr = (tgl && String(tgl).includes("T")) ? String(tgl).split("T")[0] : String(tgl);
+        let tglStr = getLocalDateString(tgl); // Menggunakan fungsi parse zona waktu lokal
         return tglStr === targetTglStr;
       });
 
@@ -538,6 +555,7 @@
     };
 
     function recordEvent(keterangan, isBaseActivity = true, captionText = "") {
+      // Waktu selalu mengambil waktu realtime saat ini
       let dateRaw = new Date();
       let h = String(dateRaw.getHours()).padStart(2,'0');
       let m = String(dateRaw.getMinutes()).padStart(2,'0');
@@ -568,7 +586,6 @@
       tbody.appendChild(tr);
       updateTableNumbers();
 
-      // Saat mengirim, sistem akan menggunakan sessionData.tanggal mentah tanpa diubah ke UTC
       kirimDataApi('record', { ...sessionData, waktu: timeStr, keterangan: fullText });
     }
 
@@ -639,7 +656,8 @@
             let groupedData = {};
             for(let i = 1; i < allHistoryData.length; i++) {
               let tgl = allHistoryData[i][1];
-              let tglStr = (tgl && String(tgl).includes("T")) ? String(tgl).split("T")[0] : String(tgl);
+              // Menggunakan fungsi getLocalDateString agar tidak terpengaruh pergeseran 7 jam
+              let tglStr = getLocalDateString(tgl); 
               
               if(!groupedData[tglStr]) {
                 groupedData[tglStr] = { hari: allHistoryData[i][2], pengamat: allHistoryData[i][3], tempat: allHistoryData[i][4], count: 0 };
@@ -678,7 +696,7 @@
       const filteredData = allHistoryData.filter((row, index) => {
         if(index === 0) return false; 
         let tgl = row[1];
-        let tglStr = (tgl && String(tgl).includes("T")) ? String(tgl).split("T")[0] : String(tgl);
+        let tglStr = getLocalDateString(tgl); // Parsing zona waktu lokal
         return tglStr === targetTglStr;
       });
 
