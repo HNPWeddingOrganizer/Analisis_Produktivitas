@@ -774,18 +774,6 @@ function initCharts() {
       }
     }
 
-   function addCaption() {
-      const input = document.getElementById('manualInput');
-      const caption = input.value.trim();
-      if (caption) { 
-        // Gabungkan aktivitas terakhir dengan caption
-        const aktivitasBaru = lastBaseActivity + " : " + caption;
-        // Panggil recordEvent dengan false agar tidak mengganti base activity utama
-        recordEvent(aktivitasBaru, false); 
-        input.value = ''; 
-      }
-    }
-
     function addNewButton() {
       const name = document.getElementById('newButtonName').value.trim();
       if (name) {
