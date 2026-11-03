@@ -175,8 +175,8 @@
 
       <div class="card" id="button-group">
         <h4 style="margin-top:0; color: var(--primary);"><i class="bi bi-lightning-charge-fill" style="color:var(--warning);"></i> Catat Aktivitas:</h4>
+         <button onclick="recordEvent('Produktif')" class="btn-success"><i class="bi bi-play-circle"></i> Produktif</button>
         <button onclick="recordEvent('Idle Time (Waktu Menganggur)')" class="btn-danger"><i class="bi bi-pause-circle"></i> Idle Time (Menganggur)</button>
-        <button onclick="recordEvent('Produktif')" class="btn-success"><i class="bi bi-play-circle"></i> Produktif</button>
         <span id="dynamic-buttons-container"></span>
       </div>
 
@@ -383,7 +383,7 @@
 
       chart.data.labels = [];
       chart.data.datasets[0].data = [];
-      chart.options.scales.y.labels = ['Idle Time (Waktu Menganggur)', 'Produktif'];
+      chart.options.scales.y.labels = ['Produktif','Idle Time (Waktu Menganggur)'];
       const tbody = document.querySelector('#dataTable tbody');
       tbody.innerHTML = '';
 
@@ -411,14 +411,14 @@
     let chart = new Chart(ctx, {
       type: 'line',
       data: { labels: [], datasets: [{ label: 'Aktivitas', data: [], borderColor: '#4e73df', backgroundColor: 'rgba(78, 115, 223, 0.1)', borderWidth: 3, pointBackgroundColor: '#fff', pointRadius: 5, fill: true, stepped: 'middle' }] },
-      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { type: 'category', labels: ['Idle Time (Waktu Menganggur)', 'Produktif'], offset: true } } }
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { type: 'category', labels: ['Produktif','Idle Time (Waktu Menganggur)'], offset: true } } }
     });
 
     const histCtx = document.getElementById('historyDetailChart').getContext('2d');
     let historyChart = new Chart(histCtx, {
       type: 'line',
       data: { labels: [], datasets: [{ label: 'Aktivitas', data: [], borderColor: '#1cc88a', backgroundColor: 'rgba(28, 200, 138, 0.1)', borderWidth: 3, pointBackgroundColor: '#fff', pointRadius: 5, fill: true, stepped: 'middle' }] },
-      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { type: 'category', labels: ['Idle Time (Waktu Menganggur)', 'Produktif'], offset: true } } }
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { type: 'category', labels: ['Produktif','Idle Time (Waktu Menganggur)'], offset: true } } }
     });
 
     function recordEvent(keterangan) {
@@ -552,7 +552,7 @@
 
       historyChart.data.labels = [];
       historyChart.data.datasets[0].data = [];
-      historyChart.options.scales.y.labels = ['Idle Time (Waktu Menganggur)', 'Produktif'];
+      historyChart.options.scales.y.labels = [ 'Produktif','Idle Time (Waktu Menganggur)'];
       
       const tbody = document.querySelector('#historyDetailTable tbody');
       tbody.innerHTML = '';
