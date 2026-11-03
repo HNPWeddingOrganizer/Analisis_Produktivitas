@@ -393,10 +393,18 @@
       filteredData.forEach((row, idx) => {
         const waktu = row[5];
         const ket = row[6];
+        
+        // Cek jika ini caption (mengandung " : ")
+        let baseActivity = ket;
+        if (ket && ket.includes(" : ")) {
+           baseActivity = ket.split(" : ")[0].trim();
+        }
 
-        if (!chart.options.scales.y.labels.includes(ket)) { chart.options.scales.y.labels.push(ket); }
+        if (!chart.options.scales.y.labels.includes(baseActivity)) { 
+          chart.options.scales.y.labels.push(baseActivity); 
+        }
         chart.data.labels.push(waktu);
-        chart.data.datasets[0].data.push(ket);
+        chart.data.datasets[0].data.push({ x: waktu, y: baseActivity, caption: ket });
 
         const tr = document.createElement('tr');
         tr.innerHTML = `<td style="text-align:center;" class="row-num"></td><td>${waktu}</td><td>${ket}</td><td class="no-print table-actions" style="text-align:center;"><button class="btn-outline" onclick="deleteDataPoint(this, '${waktu}')"><i class="bi bi-trash-fill"></i> Hapus</button></td>`;
@@ -424,14 +432,14 @@
 
 function initCharts() {
       const ctx = document.getElementById('productivityChart').getContext('2d');
-      if(chart) chart.destroy(); // Hapus chart lama jika sudah ada
+      if(chart) chart.destroy(); 
       chart = new Chart(ctx, {
         type: 'line',
         data: { 
           labels: [], 
           datasets: [{ 
             label: 'Aktivitas', 
-            data: [], 
+            data: [], // Ini akan menyimpan objek {x, y, caption}
             borderColor: '#4e73df', 
             backgroundColor: 'rgba(78, 115, 223, 0.1)', 
             borderWidth: 2, 
@@ -441,16 +449,34 @@ function initCharts() {
             pointRadius: 3, 
             pointHoverRadius: 6,
             pointBackgroundColor: function(context) {
-              let aktivitas = context.dataset.data[context.dataIndex];
+              // Baca dari nilai y aslinya
+              let aktivitas = context.dataset.data[context.dataIndex]?.y;
               return getColorByAktivitas(aktivitas);
             },
             pointBorderColor: function(context) {
-              let aktivitas = context.dataset.data[context.dataIndex];
+              let aktivitas = context.dataset.data[context.dataIndex]?.y;
               return getColorByAktivitas(aktivitas);
             }
           }] 
         },
-        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { type: 'category', labels: ['Produktif','Idle Time (Waktu Menganggur)'], offset: true } } }
+        options: { 
+          responsive: true, 
+          plugins: { 
+            legend: { display: false },
+            // Tampilkan caption di tooltip jika ada
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  let dataPoint = context.dataset.data[context.dataIndex];
+                  return dataPoint.caption ? dataPoint.caption : dataPoint.y;
+                }
+              }
+            }
+          }, 
+          scales: { 
+            y: { type: 'category', labels: ['Produktif','Idle Time (Waktu Menganggur)'], offset: true } 
+          } 
+        }
       });
 
       const histCtx = document.getElementById('historyDetailChart').getContext('2d');
@@ -471,16 +497,32 @@ function initCharts() {
             pointRadius: 3, 
             pointHoverRadius: 6,
             pointBackgroundColor: function(context) {
-              let aktivitas = context.dataset.data[context.dataIndex];
+              let aktivitas = context.dataset.data[context.dataIndex]?.y;
               return getColorByAktivitas(aktivitas);
             },
             pointBorderColor: function(context) {
-              let aktivitas = context.dataset.data[context.dataIndex];
+              let aktivitas = context.dataset.data[context.dataIndex]?.y;
               return getColorByAktivitas(aktivitas);
             }
           }] 
         },
-        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { type: 'category', labels: ['Produktif','Idle Time (Waktu Menganggur)'], offset: true } } }
+        options: { 
+          responsive: true, 
+          plugins: { 
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  let dataPoint = context.dataset.data[context.dataIndex];
+                  return dataPoint.caption ? dataPoint.caption : dataPoint.y;
+                }
+              }
+            }
+          }, 
+          scales: { 
+            y: { type: 'category', labels: ['Produktif','Idle Time (Waktu Menganggur)'], offset: true } 
+          } 
+        }
       });
     }
     
@@ -488,28 +530,51 @@ function initCharts() {
     window.onload = function() {
       initCharts();
     };
-   function recordEvent(keterangan, isBaseActivity = true) {
-      // Simpan aktivitas sebagai base jika berasal dari klik tombol
-      if (isBaseActivity) {
-        lastBaseActivity = keterangan;
-      }
-
+  // Update fungsi recordEvent untuk menerima baseActivity dan fullCaption
+    function recordEvent(keterangan, isBaseActivity = true, captionText = "") {
       const timeStr = new Date().toLocaleTimeString('id-ID');
       
-      if (!chart.options.scales.y.labels.includes(keterangan)) { chart.options.scales.y.labels.push(keterangan); }
+      let baseActivity = keterangan;
+      let fullText = keterangan;
+      
+      if (isBaseActivity) {
+        lastBaseActivity = keterangan; // Simpan aktivitas dasar
+      } else {
+        baseActivity = lastBaseActivity; // Gunakan aktivitas dasar untuk Chart sumbu Y
+        fullText = lastBaseActivity + " : " + captionText; // Gunakan fulltext untuk tabel/sheet
+      }
+
+      // Pastikan label dasar ada di sumbu Y chart
+      if (!chart.options.scales.y.labels.includes(baseActivity)) { 
+        chart.options.scales.y.labels.push(baseActivity); 
+      }
+      
       chart.data.labels.push(timeStr);
-      chart.data.datasets[0].data.push(keterangan);
+      // Simpan sebagai object agar Tooltip bisa membaca text panjang, tapi Sumbu Y baca text pendek
+      chart.data.datasets[0].data.push({ x: timeStr, y: baseActivity, caption: fullText });
       chart.update();
 
+      // Tabel tetap menampilkan keterangan panjang
       const tbody = document.querySelector('#dataTable tbody');
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td style="text-align:center;" class="row-num"></td><td>${timeStr}</td><td>${keterangan}</td><td class="no-print table-actions" style="text-align:center;"><button class="btn-outline" onclick="deleteDataPoint(this, '${timeStr}')"><i class="bi bi-trash-fill"></i> Hapus</button></td>`;
+      tr.innerHTML = `<td style="text-align:center;" class="row-num"></td><td>${timeStr}</td><td>${fullText}</td><td class="no-print table-actions" style="text-align:center;"><button class="btn-outline" onclick="deleteDataPoint(this, '${timeStr}')"><i class="bi bi-trash-fill"></i> Hapus</button></td>`;
       tbody.appendChild(tr);
       updateTableNumbers();
 
-      kirimDataApi('record', { ...sessionData, waktu: timeStr, keterangan });
+      // Sheet tetap menerima keterangan panjang
+      kirimDataApi('record', { ...sessionData, waktu: timeStr, keterangan: fullText });
     }
 
+    // Fungsi Add Caption
+    function addCaption() {
+      const input = document.getElementById('manualInput');
+      const caption = input.value.trim();
+      if (caption) { 
+        // Panggil recordEvent dengan false, dan kirimkan teks captionnya
+        recordEvent(null, false, caption); 
+        input.value = ''; 
+      }
+    }
     function deleteDataPoint(btn, waktuStr) {
       if(!confirm(`Yakin hapus data pada waktu ${waktuStr}?`)) return;
       btn.closest('tr').remove();
@@ -632,10 +697,17 @@ function initCharts() {
       filteredData.forEach((row, idx) => {
         const waktu = row[5];
         const ket = row[6];
+        
+        let baseActivity = ket;
+        if (ket && ket.includes(" : ")) {
+           baseActivity = ket.split(" : ")[0].trim();
+        }
 
-        if (!historyChart.options.scales.y.labels.includes(ket)) { historyChart.options.scales.y.labels.push(ket); }
+        if (!historyChart.options.scales.y.labels.includes(baseActivity)) { 
+          historyChart.options.scales.y.labels.push(baseActivity); 
+        }
         historyChart.data.labels.push(waktu);
-        historyChart.data.datasets[0].data.push(ket);
+        historyChart.data.datasets[0].data.push({ x: waktu, y: baseActivity, caption: ket });
 
         const tr = document.createElement('tr');
         tr.innerHTML = `<td style="text-align:center;">${idx+1}</td><td>${waktu}</td><td>${ket}</td>`;
