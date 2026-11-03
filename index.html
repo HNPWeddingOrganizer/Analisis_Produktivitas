@@ -10,25 +10,11 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
   <script>
-        // 1. Blokir Klik Kanan (Context Menu)
+        // Blokir interaksi dev tools (opsional, sesuai request lama)
         document.addEventListener("contextmenu", e => e.preventDefault());
-
-        // 2. Blokir Shortcut Keyboard (F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+U, Ctrl+S)
         document.onkeydown = function (e) {
-            if (
-                e.keyCode === 123 || // F12
-                (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 67 || e.keyCode === 74)) || // Inspect Element
-                (e.ctrlKey && (e.keyCode === 85 || e.keyCode === 83)) // View Source & Save
-            ) {
-                e.preventDefault();
-                return false;
-            }
+            if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 67 || e.keyCode === 74)) || (e.ctrlKey && (e.keyCode === 85 || e.keyCode === 83))) { e.preventDefault(); return false; }
         };
-
-        // 3. Debugger Trap (Membuat DevTools freeze jika dipaksa buka dengan cara lain)
-        setInterval(() => {
-            try { (function () { return false; }['constructor']('debugger')()); } catch (e) { }
-        }, 100);
     </script>
   <style>
     :root {
@@ -168,7 +154,6 @@
         <div><i class="bi bi-person"></i> <strong>Pengamat:</strong> <span id="lblPengamat">-</span></div>
         <div><i class="bi bi-geo-alt"></i> <strong>Tempat:</strong> <span id="lblTempat">-</span></div>
         <div><i class="bi bi-calendar"></i> <strong>Tanggal:</strong> <span id="lblTanggal">-</span> (<span id="lblHari">-</span>)</div>
-        <button onclick="resetData()" class="btn-outline"><i class="bi bi-trash"></i> Reset Hari Ini</button>
       </div>
       
       <div class="view-toggle">
@@ -317,7 +302,8 @@
   <script>
     // URL VERCEL/APPS SCRIPT ANDA
     const scriptURL = 'https://script.google.com/macros/s/AKfycbzpxQOrjl99D7kcOr6fVs_PcFg54q9bNESw2ko2corcrS7Q8pGpbl39SHr6BS13x6XR/exec';
-   let sessionData = { pengamat: "", tempat: "", tanggal: "", hari: "" };
+    
+    let sessionData = { pengamat: "", tempat: "", tanggal: "", hari: "" };
     let allHistoryData = []; 
     let lastBaseActivity = "Produktif"; 
 
@@ -335,18 +321,17 @@
 
     function getHariFromDate(dateString) {
       const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-      return days[new Date(dateString).getDay()];
+      const dateObj = new Date(dateString);
+      if (isNaN(dateObj)) return "-";
+      return days[dateObj.getDay()];
     }
     
-    // FORMAT WAKTU HELPER FUNCTION
     function formatWaktuFromSheet(waktuSheet) {
       if(!waktuSheet) return "-";
       let waktuStr = String(waktuSheet);
       if(waktuStr.includes("T")) {
-          // Buat objek date lokal jika berupa format ISO Date (e.g. 1899-12-30T13:07:04.000Z)
           let dateObj = new Date(waktuStr);
           if(!isNaN(dateObj)){
-            // Ambil jam dan menit saja sesuai zona lokal, atau bisa padStart
             let jam = String(dateObj.getHours()).padStart(2, '0');
             let menit = String(dateObj.getMinutes()).padStart(2, '0');
             let detik = String(dateObj.getSeconds()).padStart(2, '0');
@@ -356,8 +341,6 @@
       return waktuStr;
     }
 
-
-    // ========== BAGIAN OBSERVASI AKTIF ==========
     function startObservation() {
       const pengamat = document.getElementById('inputPengamat').value.trim();
       const tempat = document.getElementById('inputTempat').value.trim();
@@ -388,7 +371,9 @@
       toggleView('chart');
     }
 
+    // Melanjutkan pengamatan menggunakan tanggal dari riwayat
     function continueObservation(targetTglStr, pengamat, tempat, hari) {
+      // Set sesi dengan tanggal historis
       sessionData.pengamat = pengamat;
       sessionData.tempat = tempat;
       sessionData.tanggal = targetTglStr;
@@ -396,7 +381,7 @@
 
       document.getElementById('lblPengamat').innerText = pengamat;
       document.getElementById('lblTempat').innerText = tempat;
-      document.getElementById('lblTanggal').innerText = targetTglStr;
+      document.getElementById('lblTanggal').innerText = targetTglStr; // Tampilkan tanggal riwayat
       document.getElementById('lblHari').innerText = hari;
       
       document.getElementById('printPengamat').innerText = pengamat;
@@ -551,12 +536,12 @@
     };
 
     function recordEvent(keterangan, isBaseActivity = true, captionText = "") {
-      // Ambil waktu dari fungsi jam realtime web
+      // Waktu selalu mengambil waktu realtime saat ini
       let dateRaw = new Date();
       let h = String(dateRaw.getHours()).padStart(2,'0');
       let m = String(dateRaw.getMinutes()).padStart(2,'0');
       let s = String(dateRaw.getSeconds()).padStart(2,'0');
-      const timeStr = `${h}.${m}.${s}`; // Gunakan titik sesuai di sheet
+      const timeStr = `${h}.${m}.${s}`; 
       
       let baseActivity = keterangan;
       let fullText = keterangan;
@@ -582,6 +567,7 @@
       tbody.appendChild(tr);
       updateTableNumbers();
 
+      // Mengirim sessionData yang berisi tanggal riwayat, bukan tanggal hari ini
       kirimDataApi('record', { ...sessionData, waktu: timeStr, keterangan: fullText });
     }
 
@@ -593,6 +579,7 @@
         input.value = ''; 
       }
     }
+
     function deleteDataPoint(btn, waktuStr) {
       if(!confirm(`Yakin hapus data pada waktu ${waktuStr}?`)) return;
       btn.closest('tr').remove();
@@ -623,7 +610,6 @@
         .catch(() => { if(status){ status.innerHTML = '<i class="bi bi-x-circle-fill"></i> Gagal terhubung!'; status.style.color = '#e74a3b'; } });
     }
 
-    // ========== BAGIAN HISTORY (GROUPING & DETAIL) ==========
     function loadHistory() {
       switchScreen('screen-history');
       const table = document.getElementById('historyTable');
@@ -791,6 +777,7 @@
       if (confirm("PERINGATAN: Yakin hapus SELURUH riwayat di database? (Tombol ini mereset file Spreadsheet ke kosong)")) {
         document.querySelector('#dataTable tbody').innerHTML = '';
         chart.data.labels = []; chart.data.datasets[0].data = []; chart.update();
+        // Memanggil API khusus untuk reset semua
         kirimDataApi('reset', {});
       }
     }
