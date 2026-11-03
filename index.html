@@ -14,6 +14,7 @@
       --success: #1cc88a; --success-hover: #17a673;
       --danger: #e74a3b; --danger-hover: #be2617;
       --warning: #f6c23e; --warning-hover: #dfa821;
+      --info: #36b9cc; --info-hover: #2c9faf;
       --bg: #f8f9fc; --card-bg: #ffffff; --text: #5a5c69;
     }
     body { font-family: 'Poppins', sans-serif; background-color: var(--bg); color: var(--text); padding: 20px; max-width: 1000px; margin: auto; }
@@ -29,6 +30,8 @@
     .btn-danger { background-color: var(--danger); color: white; }
     .btn-danger:hover { background-color: var(--danger-hover); }
     .btn-warning { background-color: var(--warning); color: #fff; }
+    .btn-info { background-color: var(--info); color: white; }
+    .btn-info:hover { background-color: var(--info-hover); }
     .btn-outline { background-color: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 6px 12px; font-size: 12px; }
     .btn-block { display: flex; width: 100%; padding: 15px; font-size: 16px; margin-top: 15px; justify-content: center; }
 
@@ -45,10 +48,8 @@
     .delete-badge:hover { transform: scale(1.1); background: var(--danger-hover); }
     
     .table-responsive { overflow-x: auto; }
-    
-    /* Tabel Dasar di UI (Layar) */
     table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; background: white; border-radius: 8px; }
-    th, td { border: 1px solid #e3e6f0; padding: 10px; text-align: left; word-wrap: break-word; white-space: normal; }
+    th, td { border: 1px solid #e3e6f0; padding: 10px; text-align: left; word-wrap: break-word; white-space: normal; vertical-align: middle; }
     th { background-color: var(--primary); color: white; font-weight: 600; }
     tr:hover td { background-color: #f8f9fc; }
     
@@ -62,29 +63,18 @@
       body { background: white; color: black; font-family: Arial, sans-serif; }
       body * { visibility: hidden; }
       
-      #print-area, #print-area * { visibility: visible; }
-      #print-area { position: absolute; left: 0; top: 0; width: 100%; display: block !important; box-shadow: none; border: none; padding: 0; }
+      #print-area, #print-area *, #print-history-area, #print-history-area * { visibility: visible; }
+      #print-area, #print-history-area { position: absolute; left: 0; top: 0; width: 100%; display: block !important; box-shadow: none; border: none; padding: 0; }
       
-      /* Agar Header Tabel berulang di setiap halaman */
       table { width: 100%; table-layout: fixed; border-collapse: collapse; page-break-inside: auto; border: none !important; }
       tr { page-break-inside: avoid; page-break-after: auto; }
       thead { display: table-header-group; }
       tbody { display: table-row-group; }
       
-      /* Pengaturan Border, Warna, dan Wrap Teks untuk Cetak */
-      th, td { 
-        border: 1px solid black !important; 
-        padding: 8px; 
-        color: black !important; 
-        word-wrap: break-word !important; 
-        overflow-wrap: break-word !important; 
-        white-space: normal !important;
-      }
+      th, td { border: 1px solid black !important; padding: 8px; color: black !important; word-wrap: break-word !important; overflow-wrap: break-word !important; white-space: normal !important; }
       th { background-color: #f2f2f2 !important; font-weight: bold; }
       
-      /* Menghilangkan border khusus baris judul laporan */
       .header-laporan td { border: none !important; background: white !important; padding: 0 0 15px 0 !important; }
-      
       .no-print { display: none !important; }
     }
   </style>
@@ -180,12 +170,11 @@
       </div>
     </div>
 
-    <!-- Area Cetak Laporan Hari Ini (Telah disesuaikan) -->
+    <!-- Area Cetak Laporan Hari Ini -->
     <div id="print-area" class="card" style="display: none;">
       <div class="table-responsive">
         <table id="dataTable">
           <thead>
-            <!-- Baris ini berisi informasi pengamatan. Akan berulang pada halaman cetak baru -->
             <tr class="header-laporan">
               <td colspan="4">
                 <h2 style="text-align: center; color: black; margin: 0 0 10px 0; font-size: 20px;">Laporan Pengamatan Produktivitas</h2>
@@ -196,7 +185,6 @@
                 </div>
               </td>
             </tr>
-            <!-- Baris ini berisi kolom header tabel. Akan berulang pada halaman cetak baru -->
             <tr>
               <th style="width: 5%; text-align: center;">No</th>
               <th style="width: 20%;">Waktu</th>
@@ -210,11 +198,11 @@
     </div>
   </div>
 
-  <!-- SCREEN 4: HISTORY -->
+  <!-- SCREEN 4: HISTORY (Daftar Pengamatan Harian) -->
   <div id="screen-history" class="screen">
     <div class="card">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h3 style="color: var(--primary); margin: 0;"><i class="bi bi-clock-history"></i> Riwayat Seluruh Pengamatan</h3>
+        <h3 style="color: var(--primary); margin: 0;"><i class="bi bi-clock-history"></i> Riwayat Pengamatan Harian</h3>
         <button class="btn-warning" onclick="switchScreen('screen-home')"><i class="bi bi-arrow-left-circle"></i> Kembali</button>
       </div>
       <p id="history-status" style="color: var(--warning); font-style: italic;"><i class="bi bi-hourglass-split"></i> Memuat data dari server...</p>
@@ -223,13 +211,64 @@
         <table id="historyTable" style="display:none;">
           <thead>
             <tr>
-              <th>No</th>
-              <th>Tanggal</th>
-              <th>Hari</th>
-              <th>Pengamat</th>
-              <th>Tempat</th>
-              <th>Waktu</th>
-              <th>Keterangan</th>
+              <th style="width: 5%; text-align:center;">No</th>
+              <th style="width: 15%;">Tanggal</th>
+              <th style="width: 15%;">Hari</th>
+              <th style="width: 20%;">Pengamat</th>
+              <th style="width: 15%;">Tempat</th>
+              <th style="width: 10%; text-align:center;">Jml Data</th>
+              <th style="width: 20%; text-align:center;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 5: DETAIL HISTORY VIEW -->
+  <div id="screen-history-detail" class="screen">
+    <div class="no-print">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <button class="btn-warning" onclick="switchScreen('screen-history')"><i class="bi bi-arrow-left-circle"></i> Kembali ke Daftar</button>
+      </div>
+      
+      <div class="card" style="display: flex; flex-wrap: wrap; justify-content: space-between; padding: 15px 25px; align-items: center; background-color: var(--primary); color: white;">
+        <div><i class="bi bi-person"></i> <strong>Pengamat:</strong> <span id="histDetPengamat">-</span></div>
+        <div><i class="bi bi-geo-alt"></i> <strong>Tempat:</strong> <span id="histDetTempat">-</span></div>
+        <div><i class="bi bi-calendar"></i> <strong>Tanggal:</strong> <span id="histDetHariTanggal">-</span></div>
+      </div>
+      
+      <div style="text-align: center; margin-bottom: 20px;">
+        <button onclick="toggleHistoryView('chart')" class="btn-success"><i class="bi bi-bar-chart-fill"></i> Tampilan Grafik</button>
+        <button onclick="toggleHistoryView('table')" class="btn-primary"><i class="bi bi-printer"></i> Tabel / Cetak F4</button>
+      </div>
+
+      <!-- Chart Detail -->
+      <div id="hist-chart-container" class="card">
+        <canvas id="historyDetailChart" height="100"></canvas>
+      </div>
+    </div>
+
+    <!-- Tabel/Cetak Detail -->
+    <div id="print-history-area" class="card" style="display: none;">
+      <div class="table-responsive">
+        <table id="historyDetailTable">
+          <thead>
+            <tr class="header-laporan">
+              <td colspan="3">
+                <h2 style="text-align: center; color: black; margin: 0 0 10px 0; font-size: 20px;">Detail Pengamatan Produktivitas</h2>
+                <div style="font-size: 13px; line-height: 1.6; color: black;">
+                  <strong>Nama Pengamat :</strong> <span id="printHistPengamat">-</span><br>
+                  <strong>Tempat &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:</strong> <span id="printHistTempat">-</span><br>
+                  <strong>Hari, Tanggal &nbsp;:</strong> <span id="printHistHariTanggal">-</span>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <th style="width: 5%; text-align: center;">No</th>
+              <th style="width: 20%;">Waktu</th>
+              <th style="width: 75%;">Keterangan Aktivitas</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -239,8 +278,11 @@
   </div>
 
   <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbzxo8kJqO0LFHwLsvUUaqhMjvQirVrDeQIM55MLNtCEUn2ybbFmzBNiNQYcfImmiKYJ/exec';
+    // URL VERCEL/APPS SCRIPT ANDA
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbzpxQOrjl99D7kcOr6fVs_PcFg54q9bNESw2ko2corcrS7Q8pGpbl39SHr6BS13x6XR/exec';
+    
     let sessionData = { pengamat: "", tempat: "", tanggal: "", hari: "" };
+    let allHistoryData = []; // Simpan semua riwayat data di memori
 
     setInterval(() => {
       document.getElementById('clock').innerText = new Date().toLocaleTimeString('id-ID');
@@ -256,15 +298,13 @@
       return days[new Date(dateString).getDay()];
     }
 
+    // ========== BAGIAN OBSERVASI AKTIF ==========
     function startObservation() {
       const pengamat = document.getElementById('inputPengamat').value.trim();
       const tempat = document.getElementById('inputTempat').value.trim();
       const tglRaw = document.getElementById('inputTanggal').value;
       
-      if (!pengamat || !tempat || !tglRaw) {
-        alert("Harap isi semua data (Nama, Tempat, dan Tanggal)!");
-        return;
-      }
+      if (!pengamat || !tempat || !tglRaw) { alert("Harap isi semua data (Nama, Tempat, dan Tanggal)!"); return; }
 
       sessionData.pengamat = pengamat;
       sessionData.tempat = tempat;
@@ -284,10 +324,19 @@
       toggleView('chart');
     }
 
+    // Chart Observasi Aktif
     const ctx = document.getElementById('productivityChart').getContext('2d');
     let chart = new Chart(ctx, {
       type: 'line',
       data: { labels: [], datasets: [{ label: 'Aktivitas', data: [], borderColor: '#4e73df', backgroundColor: 'rgba(78, 115, 223, 0.1)', borderWidth: 3, pointBackgroundColor: '#fff', pointRadius: 5, fill: true, stepped: 'middle' }] },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { type: 'category', labels: ['Idle Time (Waktu Menganggur)', 'Produktif'], offset: true } } }
+    });
+
+    // Chart Detail Riwayat
+    const histCtx = document.getElementById('historyDetailChart').getContext('2d');
+    let historyChart = new Chart(histCtx, {
+      type: 'line',
+      data: { labels: [], datasets: [{ label: 'Aktivitas', data: [], borderColor: '#1cc88a', backgroundColor: 'rgba(28, 200, 138, 0.1)', borderWidth: 3, pointBackgroundColor: '#fff', pointRadius: 5, fill: true, stepped: 'middle' }] },
       options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { type: 'category', labels: ['Idle Time (Waktu Menganggur)', 'Produktif'], offset: true } } }
     });
 
@@ -301,10 +350,7 @@
 
       const tbody = document.querySelector('#dataTable tbody');
       const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td style="text-align:center;" class="row-num"></td>
-        <td>${timeStr}</td><td>${keterangan}</td>
-        <td class="no-print" style="text-align:center;"><button class="btn-outline" onclick="deleteDataPoint(this, '${timeStr}')"><i class="bi bi-trash-fill"></i> Hapus</button></td>`;
+      tr.innerHTML = `<td style="text-align:center;" class="row-num"></td><td>${timeStr}</td><td>${keterangan}</td><td class="no-print" style="text-align:center;"><button class="btn-outline" onclick="deleteDataPoint(this, '${timeStr}')"><i class="bi bi-trash-fill"></i> Hapus</button></td>`;
       tbody.appendChild(tr);
       updateTableNumbers();
 
@@ -317,11 +363,7 @@
       updateTableNumbers();
       
       const index = chart.data.labels.indexOf(waktuStr);
-      if(index > -1) {
-        chart.data.labels.splice(index, 1);
-        chart.data.datasets[0].data.splice(index, 1);
-        chart.update();
-      }
+      if(index > -1) { chart.data.labels.splice(index, 1); chart.data.datasets[0].data.splice(index, 1); chart.update(); }
       kirimDataApi('delete', { waktu: waktuStr });
     }
 
@@ -331,18 +373,21 @@
 
     function kirimDataApi(action, data) {
       const status = document.getElementById('status');
-      status.innerHTML = action === 'delete' ? '<i class="bi bi-arrow-repeat spin"></i> Menghapus data...' : '<i class="bi bi-arrow-repeat spin"></i> Menyimpan data...';
-      status.style.color = '#f6c23e';
+      if (status) {
+        status.innerHTML = action === 'delete' ? '<i class="bi bi-arrow-repeat spin"></i> Menghapus data...' : '<i class="bi bi-arrow-repeat spin"></i> Menyimpan data...';
+        status.style.color = '#f6c23e';
+      }
 
       const formData = new FormData();
       formData.append('action', action);
       for (let key in data) { formData.append(key, data[key]); }
 
       fetch(scriptURL, { method: 'POST', body: formData })
-        .then(() => { status.innerHTML = '<i class="bi bi-check-circle-fill"></i> Tersimpan!'; status.style.color = '#1cc88a'; setTimeout(() => status.innerHTML = '', 3000); })
-        .catch(() => { status.innerHTML = '<i class="bi bi-x-circle-fill"></i> Gagal terhubung!'; status.style.color = '#e74a3b'; });
+        .then(() => { if(status){ status.innerHTML = '<i class="bi bi-check-circle-fill"></i> Tersimpan!'; status.style.color = '#1cc88a'; setTimeout(() => status.innerHTML = '', 3000); } })
+        .catch(() => { if(status){ status.innerHTML = '<i class="bi bi-x-circle-fill"></i> Gagal terhubung!'; status.style.color = '#e74a3b'; } });
     }
 
+    // ========== BAGIAN HISTORY (GROUPING & DETAIL) ==========
     function loadHistory() {
       switchScreen('screen-history');
       const table = document.getElementById('historyTable');
@@ -360,28 +405,44 @@
         .then(res => res.json())
         .then(response => {
           if(response.result === 'success') {
-            const data = response.data;
-            if(data.length <= 1) {
+            allHistoryData = response.data; // Simpan ke global
+            
+            if(allHistoryData.length <= 1) {
              status.innerHTML = '<i class="bi bi-info-circle-fill"></i> Tidak ada data riwayat yang ditemukan.';
               return;
             }
             
-            for(let i = 1; i < data.length; i++) {
-              let tgl = data[i][1];
-              if (tgl && tgl.includes("T")) { tgl = tgl.split("T")[0]; }
+            // Proses pengelompokan (Grouping) berdasarkan Tanggal
+            let groupedData = {};
+            for(let i = 1; i < allHistoryData.length; i++) {
+              let tgl = allHistoryData[i][1];
+              let tglStr = (tgl && String(tgl).includes("T")) ? String(tgl).split("T")[0] : String(tgl);
+              
+              if(!groupedData[tglStr]) {
+                groupedData[tglStr] = { hari: allHistoryData[i][2], pengamat: allHistoryData[i][3], tempat: allHistoryData[i][4], count: 0 };
+              }
+              groupedData[tglStr].count++;
+            }
 
+            // Tampilkan ke Tabel Daftar Hari
+            let countId = 1;
+            for (let tglKey in groupedData) {
               const tr = document.createElement('tr');
               tr.innerHTML = `
-                <td style="text-align:center;">${i}</td>
-                <td>${tgl}</td>
-                <td>${data[i][2]}</td>
-                <td>${data[i][3]}</td>
-                <td>${data[i][4]}</td>
-                <td>${data[i][5]}</td>
-                <td>${data[i][6]}</td>
+                <td style="text-align:center;">${countId++}</td>
+                <td>${tglKey}</td>
+                <td>${groupedData[tglKey].hari}</td>
+                <td>${groupedData[tglKey].pengamat}</td>
+                <td>${groupedData[tglKey].tempat}</td>
+                <td style="text-align:center;"><span style="background:var(--primary);color:white;padding:2px 8px;border-radius:10px;font-size:12px;">${groupedData[tglKey].count} data</span></td>
+                <td style="text-align:center;">
+                  <button class="btn-info" onclick="viewHistoryDetail('${tglKey}')" style="padding: 5px 10px; font-size:12px;" title="Lihat Detail"><i class="bi bi-eye-fill"></i> Detail</button>
+                  <button class="btn-danger" onclick="deleteDailyHistory('${tglKey}')" style="padding: 5px 10px; font-size:12px;" title="Hapus Riwayat Hari Ini"><i class="bi bi-trash3-fill"></i></button>
+                </td>
               `;
               tbody.appendChild(tr);
             }
+            
             status.innerHTML = "";
             table.style.display = 'table';
           }
@@ -390,20 +451,101 @@
         });
     }
 
+    // Fungsi Melihat Detail 1 Hari Tertentu
+    function viewHistoryDetail(targetTglStr) {
+      // 1. Filter Data yang Sesuai
+      const filteredData = allHistoryData.filter((row, index) => {
+        if(index === 0) return false; // Lewati header sheet
+        let tgl = row[1];
+        let tglStr = (tgl && String(tgl).includes("T")) ? String(tgl).split("T")[0] : String(tgl);
+        return tglStr === targetTglStr;
+      });
+
+      if(filteredData.length === 0) return;
+
+      // 2. Set Informasi Header Detail
+      const info = filteredData[0];
+      document.getElementById('histDetPengamat').innerText = info[3];
+      document.getElementById('histDetTempat').innerText = info[4];
+      document.getElementById('histDetHariTanggal').innerText = `${info[2]}, ${targetTglStr}`;
+      
+      document.getElementById('printHistPengamat').innerText = info[3];
+      document.getElementById('printHistTempat').innerText = info[4];
+      document.getElementById('printHistHariTanggal').innerText = `${info[2]}, ${targetTglStr}`;
+
+      // 3. Masukkan ke Grafik Detail
+      historyChart.data.labels = [];
+      historyChart.data.datasets[0].data = [];
+      historyChart.options.scales.y.labels = ['Idle Time (Waktu Menganggur)', 'Produktif']; // Default
+      
+      // 4. Masukkan ke Tabel Detail
+      const tbody = document.querySelector('#historyDetailTable tbody');
+      tbody.innerHTML = '';
+
+      filteredData.forEach((row, idx) => {
+        const waktu = row[5];
+        const ket = row[6];
+
+        // Push to Chart
+        if (!historyChart.options.scales.y.labels.includes(ket)) { historyChart.options.scales.y.labels.push(ket); }
+        historyChart.data.labels.push(waktu);
+        historyChart.data.datasets[0].data.push(ket);
+
+        // Push to HTML Table
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td style="text-align:center;">${idx+1}</td><td>${waktu}</td><td>${ket}</td>`;
+        tbody.appendChild(tr);
+      });
+
+      historyChart.update();
+      switchScreen('screen-history-detail');
+      toggleHistoryView('chart');
+    }
+
+    // Fungsi Menghapus Data 1 Hari Penuh
+    function deleteDailyHistory(targetTglStr) {
+      if(confirm(`Peringatan Berbahaya!\nApakah Anda yakin ingin menghapus SELURUH riwayat pengamatan pada tanggal ${targetTglStr}? Data tidak bisa dikembalikan.`)) {
+        const status = document.getElementById('history-status');
+        status.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Menghapus riwayat tanggal ' + targetTglStr + '...';
+        document.getElementById('historyTable').style.display = 'none';
+
+        const formData = new FormData();
+        formData.append('action', 'delete_daily');
+        formData.append('tanggal', targetTglStr);
+
+        fetch(scriptURL, { method: 'POST', body: formData })
+          .then(() => {
+            alert('Riwayat pada tanggal ' + targetTglStr + ' berhasil dihapus.');
+            loadHistory(); // Reload tabel list riwayat
+          })
+          .catch(() => {
+            alert('Gagal menghapus riwayat!');
+            loadHistory();
+          });
+      }
+    }
+
+    function toggleHistoryView(view) {
+      if (view === 'chart') {
+        document.getElementById('hist-chart-container').style.display = 'block';
+        document.getElementById('print-history-area').style.display = 'none';
+      } else {
+        document.getElementById('hist-chart-container').style.display = 'none';
+        document.getElementById('print-history-area').style.display = 'block';
+        setTimeout(() => { window.print(); }, 300);
+      }
+    }
+
+    // ========== FUNGSI TAMBAHAN ==========
     function finishObservation() {
       if(confirm("Apakah Anda yakin ingin menyelesaikan sesi pengamatan ini? Seluruh data yang terekam telah aman dan akan masuk ke dalam riwayat.")) {
         const status = document.getElementById('status');
         status.innerHTML = '<i class="bi bi-check-circle-fill"></i> Pengamatan selesai dan tersimpan di riwayat!';
         status.style.color = '#1cc88a';
-
         setTimeout(() => {
           document.querySelector('#dataTable tbody').innerHTML = '';
-          chart.data.labels = []; 
-          chart.data.datasets[0].data = []; 
-          chart.update();
-          
+          chart.data.labels = []; chart.data.datasets[0].data = []; chart.update();
           sessionData = { pengamat: "", tempat: "", tanggal: "", hari: "" };
-          
           switchScreen('screen-home');
           status.innerHTML = '';
         }, 1500);
@@ -411,7 +553,7 @@
     }
 
     function resetData() {
-      if (confirm("PERINGATAN: Yakin reset/hapus SELURUH data di spreadsheet?")) {
+      if (confirm("PERINGATAN: Yakin hapus SELURUH riwayat di database? (Tombol ini mereset file Spreadsheet ke kosong)")) {
         document.querySelector('#dataTable tbody').innerHTML = '';
         chart.data.labels = []; chart.data.datasets[0].data = []; chart.update();
         kirimDataApi('reset', {});
@@ -430,9 +572,7 @@
         const btn = document.createElement('button'); btn.className = 'btn-primary'; 
         btn.innerHTML = `<i class="bi bi-record-circle"></i> ${name}`; 
         btn.onclick = () => recordEvent(name);
-        
         const del = document.createElement('div'); del.className = 'delete-badge'; del.innerHTML = '<i class="bi bi-x"></i>'; del.onclick = () => { if(confirm(`Hapus tombol "${name}"?`)) wrap.remove(); };
-        
         wrap.appendChild(btn); wrap.appendChild(del);
         document.getElementById('dynamic-buttons-container').appendChild(wrap);
         document.getElementById('newButtonName').value = '';
