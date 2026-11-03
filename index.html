@@ -45,8 +45,10 @@
     .delete-badge:hover { transform: scale(1.1); background: var(--danger-hover); }
     
     .table-responsive { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; background: white; border-radius: 8px; overflow: hidden; }
-    th, td { border-bottom: 1px solid #e3e6f0; padding: 10px; text-align: left; }
+    
+    /* Tabel Dasar di UI (Layar) */
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; background: white; border-radius: 8px; }
+    th, td { border: 1px solid #e3e6f0; padding: 10px; text-align: left; word-wrap: break-word; white-space: normal; }
     th { background-color: var(--primary); color: white; font-weight: 600; }
     tr:hover td { background-color: #f8f9fc; }
     
@@ -54,15 +56,35 @@
     .screen.active { display: block; animation: fadeIn 0.4s ease; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
+    /* KONFIGURASI CETAK F4 (PRINT) */
     @media print {
       @page { size: 215mm 330mm; margin: 15mm; }
-      body { background: white; }
+      body { background: white; color: black; font-family: Arial, sans-serif; }
       body * { visibility: hidden; }
+      
       #print-area, #print-area * { visibility: visible; }
-      #print-area { position: absolute; left: 0; top: 0; width: 100%; display: block !important; box-shadow: none; }
-      table { box-shadow: none; }
-      th { background-color: #f2f2f2 !important; color: black !important; border: 1px solid black; }
-      td { border: 1px solid black; }
+      #print-area { position: absolute; left: 0; top: 0; width: 100%; display: block !important; box-shadow: none; border: none; padding: 0; }
+      
+      /* Agar Header Tabel berulang di setiap halaman */
+      table { width: 100%; table-layout: fixed; border-collapse: collapse; page-break-inside: auto; border: none !important; }
+      tr { page-break-inside: avoid; page-break-after: auto; }
+      thead { display: table-header-group; }
+      tbody { display: table-row-group; }
+      
+      /* Pengaturan Border, Warna, dan Wrap Teks untuk Cetak */
+      th, td { 
+        border: 1px solid black !important; 
+        padding: 8px; 
+        color: black !important; 
+        word-wrap: break-word !important; 
+        overflow-wrap: break-word !important; 
+        white-space: normal !important;
+      }
+      th { background-color: #f2f2f2 !important; font-weight: bold; }
+      
+      /* Menghilangkan border khusus baris judul laporan */
+      .header-laporan td { border: none !important; background: white !important; padding: 0 0 15px 0 !important; }
+      
       .no-print { display: none !important; }
     }
   </style>
@@ -126,12 +148,10 @@
         <button onclick="toggleView('table')" class="btn-primary"><i class="bi bi-printer"></i> Tabel / Cetak F4</button>
       </div>
 
-      <!-- Area Grafik -->
       <div id="chart-container" class="card">
         <canvas id="productivityChart" height="100"></canvas>
       </div>
 
-      <!-- Tombol Cepat -->
       <div class="card" id="button-group">
         <h4 style="margin-top:0; color: var(--primary);"><i class="bi bi-lightning-charge-fill" style="color:var(--warning);"></i> Catat Aktivitas:</h4>
         <button onclick="recordEvent('Idle Time (Waktu Menganggur)')" class="btn-danger"><i class="bi bi-pause-circle"></i> Idle Time (Menganggur)</button>
@@ -139,7 +159,6 @@
         <span id="dynamic-buttons-container"></span>
       </div>
 
-      <!-- Input Manual -->
       <div class="card">
         <h4 style="margin-top:0; color: var(--primary);"><i class="bi bi-keyboard-fill"></i> Ketik Manual:</h4>
         <div style="display:flex; gap:10px;">
@@ -154,7 +173,6 @@
         </div>
       </div>
 
-      <!-- TOMBOL SIMPAN & SELESAI PENGAMATAN -->
       <div style="margin-top: 20px;">
         <button class="btn-success btn-block" onclick="finishObservation()" style="font-size: 18px; padding: 20px;">
           <i class="bi bi-check-circle-fill"></i> Selesai & Simpan Pengamatan
@@ -162,21 +180,27 @@
       </div>
     </div>
 
-    <!-- Area Cetak Laporan Hari Ini -->
+    <!-- Area Cetak Laporan Hari Ini (Telah disesuaikan) -->
     <div id="print-area" class="card" style="display: none;">
-      <h2 style="text-align: center; color: black;">Laporan Pengamatan Produktivitas</h2>
-      <div style="margin-bottom: 15px; font-size: 14px; line-height: 1.6;">
-        <strong>Nama Pengamat :</strong> <span id="printPengamat">-</span><br>
-        <strong>Tempat &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:</strong> <span id="printTempat">-</span><br>
-        <strong>Hari, Tanggal &nbsp;:</strong> <span id="printHariTanggal">-</span>
-      </div>
       <div class="table-responsive">
         <table id="dataTable">
           <thead>
+            <!-- Baris ini berisi informasi pengamatan. Akan berulang pada halaman cetak baru -->
+            <tr class="header-laporan">
+              <td colspan="4">
+                <h2 style="text-align: center; color: black; margin: 0 0 10px 0; font-size: 20px;">Laporan Pengamatan Produktivitas</h2>
+                <div style="font-size: 13px; line-height: 1.6; color: black;">
+                  <strong>Nama Pengamat :</strong> <span id="printPengamat">-</span><br>
+                  <strong>Tempat &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:</strong> <span id="printTempat">-</span><br>
+                  <strong>Hari, Tanggal &nbsp;:</strong> <span id="printHariTanggal">-</span>
+                </div>
+              </td>
+            </tr>
+            <!-- Baris ini berisi kolom header tabel. Akan berulang pada halaman cetak baru -->
             <tr>
               <th style="width: 5%; text-align: center;">No</th>
-              <th style="width: 15%;">Waktu</th>
-              <th style="width: 65%;">Keterangan Aktivitas</th>
+              <th style="width: 20%;">Waktu</th>
+              <th style="width: 60%;">Keterangan Aktivitas</th>
               <th class="no-print" style="width: 15%; text-align: center;">Aksi</th>
             </tr>
           </thead>
@@ -216,7 +240,6 @@
 
   <script>
     const scriptURL = 'https://script.google.com/macros/s/AKfycbyAzxt8-YkKUfALNmDi2GM5Pax6-8d69Xio3MMq04echfldh4bUiXFIGe0dVxs7umEv/exec';
-
     let sessionData = { pengamat: "", tempat: "", tanggal: "", hari: "" };
 
     setInterval(() => {
@@ -367,7 +390,6 @@
         });
     }
 
-    // FUNGSI UNTUK MENYELESAIKAN PENGAMATAN (Fitur Baru)
     function finishObservation() {
       if(confirm("Apakah Anda yakin ingin menyelesaikan sesi pengamatan ini? Seluruh data yang terekam telah aman dan akan masuk ke dalam riwayat.")) {
         const status = document.getElementById('status');
@@ -375,7 +397,6 @@
         status.style.color = '#1cc88a';
 
         setTimeout(() => {
-          // Bersihkan data UI saat ini agar siap untuk pengamatan berikutnya
           document.querySelector('#dataTable tbody').innerHTML = '';
           chart.data.labels = []; 
           chart.data.datasets[0].data = []; 
