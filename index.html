@@ -180,11 +180,11 @@
         <span id="dynamic-buttons-container"></span>
       </div>
 
-      <div class="card">
-        <h4 style="margin-top:0; color: var(--primary);"><i class="bi bi-keyboard-fill"></i> Ketik Manual:</h4>
+    <div class="card">
+        <h4 style="margin-top:0; color: var(--primary);"><i class="bi bi-chat-text-fill"></i> Tambah Caption:</h4>
         <div class="input-manual-group">
-          <input type="text" id="manualInput" placeholder="Ketik aktivitas manual..." style="margin-bottom:0; flex:1;">
-          <button onclick="recordManual()" class="btn-primary"><i class="bi bi-floppy-fill"></i> Catat</button>
+          <input type="text" id="manualInput" placeholder="Ketik caption (misal: masak nasgor)..." style="margin-bottom:0; flex:1;">
+          <button onclick="addCaption()" class="btn-primary"><i class="bi bi-plus-circle-fill"></i> Tambah</button>
         </div>
         <hr style="margin: 20px 0; border: 0; border-top: 1px solid #e3e6f0;">
         <h4 style="margin-top:0; color: var(--primary);"><i class="bi bi-plus-square-fill"></i> Tambah Tombol Baru:</h4>
@@ -310,9 +310,9 @@
   <script>
     // URL VERCEL/APPS SCRIPT ANDA
     const scriptURL = 'https://script.google.com/macros/s/AKfycbzpxQOrjl99D7kcOr6fVs_PcFg54q9bNESw2ko2corcrS7Q8pGpbl39SHr6BS13x6XR/exec';
-    
-    let sessionData = { pengamat: "", tempat: "", tanggal: "", hari: "" };
+   let sessionData = { pengamat: "", tempat: "", tanggal: "", hari: "" };
     let allHistoryData = []; 
+    let lastBaseActivity = "Produktif"; // Variabel baru pelacak tombol terakhir
 
     setInterval(() => {
       document.getElementById('clock').innerText = new Date().toLocaleTimeString('id-ID');
@@ -409,9 +409,10 @@
 
     // Fungsi pembantu untuk menentukan warna titik berdasarkan keterangan aktivitas
 function getColorByAktivitas(aktivitas) {
-  if (aktivitas === 'Produktif') return '#1cc88a'; // Warna Hijau (Success)
-  if (aktivitas === 'Idle Time (Waktu Menganggur)') return '#e74a3b'; // Warna Merah (Danger)
-  return '#f6c23e'; // Warna Kuning (Warning) untuk aktivitas manual/baru lainnya
+  // Menggunakan includes() agar warna tetap hijau/merah meski ada tambahan caption
+  if (aktivitas.includes('Produktif')) return '#1cc88a'; 
+  if (aktivitas.includes('Idle Time') || aktivitas.includes('Menganggur')) return '#e74a3b'; 
+  return '#f6c23e'; 
 }
 
 const ctx = document.getElementById('productivityChart').getContext('2d');
@@ -472,7 +473,12 @@ let historyChart = new Chart(histCtx, {
   options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { type: 'category', labels: ['Produktif','Idle Time (Waktu Menganggur)'], offset: true } } }
 });
 
-    function recordEvent(keterangan) {
+   function recordEvent(keterangan, isBaseActivity = true) {
+      // Simpan aktivitas sebagai base jika berasal dari klik tombol
+      if (isBaseActivity) {
+        lastBaseActivity = keterangan;
+      }
+
       const timeStr = new Date().toLocaleTimeString('id-ID');
       
       if (!chart.options.scales.y.labels.includes(keterangan)) { chart.options.scales.y.labels.push(keterangan); }
@@ -682,9 +688,16 @@ let historyChart = new Chart(histCtx, {
       }
     }
 
-    function recordManual() {
+   function addCaption() {
       const input = document.getElementById('manualInput');
-      if (input.value.trim()) { recordEvent(input.value.trim()); input.value = ''; }
+      const caption = input.value.trim();
+      if (caption) { 
+        // Gabungkan aktivitas terakhir dengan caption
+        const aktivitasBaru = lastBaseActivity + " : " + caption;
+        // Panggil recordEvent dengan false agar tidak mengganti base activity utama
+        recordEvent(aktivitasBaru, false); 
+        input.value = ''; 
+      }
     }
 
     function addNewButton() {
