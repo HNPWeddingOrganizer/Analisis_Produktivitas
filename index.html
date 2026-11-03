@@ -318,7 +318,7 @@
       document.getElementById(screenId).classList.add('active');
     }
 
-    // Fungsi untuk mendapatkan nama hari dari date string
+    // Fungsi untuk mendapatkan nama hari dari date string (hanya dipakai saat Setup Awal)
     function getHariFromDate(dateString) {
       const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
       const dateObj = new Date(dateString);
@@ -327,22 +327,29 @@
     }
 
     // ========== PERBAIKAN ZONA WAKTU TANGGAL (MEMPERBAIKI BUG TANGGAL BERUBAH) ==========
-    // Fungsi ini akan memaksa data UTC dari Google Sheets kembali ke format tanggal lokal (YYYY-MM-DD)
     function getLocalDateString(tgl) {
       if (!tgl) return "-";
       let str = String(tgl);
       
-      // Jika string sudah murni YYYY-MM-DD, biarkan
+      // Jika string diawali kutip tunggal (efek paksa teks), hilangkan kutipnya
+      if (str.startsWith("'")) {
+          str = str.substring(1);
+      }
+      
+      // Jika string sudah murni YYYY-MM-DD, biarkan saja
       if (str.match(/^\d{4}-\d{2}-\d{2}$/)) return str;
 
-      let dateObj = new Date(str);
-      if (isNaN(dateObj)) return str; // Jika gagal di-parse, kembalikan apa adanya
-
-      let yyyy = dateObj.getFullYear();
-      let mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-      let dd = String(dateObj.getDate()).padStart(2, '0');
-      
-      return `${yyyy}-${mm}-${dd}`;
+      // Logika cadangan jika Google Sheets masih mengirim objek format T (ISO String)
+      if (str.includes("T")) {
+          let dateObj = new Date(str);
+          if(!isNaN(dateObj)){
+            let yyyy = dateObj.getFullYear();
+            let mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+            let dd = String(dateObj.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+          }
+      }
+      return str;
     }
     
     // Fungsi untuk mem-parsing jam dari Sheet
@@ -365,7 +372,7 @@
     function startObservation() {
       const pengamat = document.getElementById('inputPengamat').value.trim();
       const tempat = document.getElementById('inputTempat').value.trim();
-      const tglRaw = document.getElementById('inputTanggal').value; // e.g. 2026-11-02
+      const tglRaw = document.getElementById('inputTanggal').value; // Mengambil string mentah (contoh: 2026-11-01)
       
       if (!pengamat || !tempat || !tglRaw) { alert("Harap isi semua data (Nama, Tempat, dan Tanggal)!"); return; }
 
@@ -392,13 +399,15 @@
       toggleView('chart');
     }
 
-    // Melanjutkan pengamatan berdasarkan tanggal riwayat
+    // Melanjutkan pengamatan Murni berdasarkan string tekstual tanggal yang ditarik dari Database
     function continueObservation(targetTglStr, pengamat, tempat, hari) {
+      // 1. Kunci identitas pengamatan: String mutlak dari History UI
       sessionData.pengamat = pengamat;
       sessionData.tempat = tempat;
-      sessionData.tanggal = targetTglStr; // TglStr sekarang dijamin "YYYY-MM-DD"
+      sessionData.tanggal = targetTglStr; 
       sessionData.hari = hari;
 
+      // 2. Set Tampilan di Layar Observasi
       document.getElementById('lblPengamat').innerText = pengamat;
       document.getElementById('lblTempat').innerText = tempat;
       document.getElementById('lblTanggal').innerText = targetTglStr;
@@ -408,10 +417,11 @@
       document.getElementById('printTempat').innerText = tempat;
       document.getElementById('printHariTanggal').innerText = `${hari}, ${targetTglStr}`;
 
+      // 3. Filter data berdasarkan string exact match
       const filteredData = allHistoryData.filter((row, index) => {
         if(index === 0) return false; 
         let tgl = row[1];
-        let tglStr = getLocalDateString(tgl); // Menggunakan fungsi parse zona waktu lokal
+        let tglStr = getLocalDateString(tgl); // Menggunakan fungsi perbaikan
         return tglStr === targetTglStr;
       });
 
@@ -555,7 +565,6 @@
     };
 
     function recordEvent(keterangan, isBaseActivity = true, captionText = "") {
-      // Waktu selalu mengambil waktu realtime saat ini
       let dateRaw = new Date();
       let h = String(dateRaw.getHours()).padStart(2,'0');
       let m = String(dateRaw.getMinutes()).padStart(2,'0');
@@ -621,7 +630,18 @@
 
       const formData = new FormData();
       formData.append('action', action);
-      for (let key in data) { formData.append(key, data[key]); }
+      
+      for (let key in data) { 
+        let val = data[key];
+        
+        // TRICK: Paksa Google Sheets menyimpan tanggal sebagai teks murni (diawali ')
+        // Ini memastikan tanggal 100% terkunci dan tidak digeser oleh sistem waktu Google!
+        if (key === 'tanggal' && action === 'record' && !String(val).startsWith("'")) {
+           val = "'" + val; 
+        }
+        
+        formData.append(key, val); 
+      }
 
       fetch(scriptURL, { method: 'POST', body: formData })
         .then(() => { if(status){ status.innerHTML = '<i class="bi bi-check-circle-fill"></i> Tersimpan!'; status.style.color = '#1cc88a'; setTimeout(() => status.innerHTML = '', 3000); } })
@@ -656,7 +676,7 @@
             let groupedData = {};
             for(let i = 1; i < allHistoryData.length; i++) {
               let tgl = allHistoryData[i][1];
-              // Menggunakan fungsi getLocalDateString agar tidak terpengaruh pergeseran 7 jam
+              // Menggunakan fungsi getLocalDateString yang sudah dimodifikasi
               let tglStr = getLocalDateString(tgl); 
               
               if(!groupedData[tglStr]) {
@@ -696,7 +716,7 @@
       const filteredData = allHistoryData.filter((row, index) => {
         if(index === 0) return false; 
         let tgl = row[1];
-        let tglStr = getLocalDateString(tgl); // Parsing zona waktu lokal
+        let tglStr = getLocalDateString(tgl); // Parsing aman zona waktu
         return tglStr === targetTglStr;
       });
 
@@ -753,6 +773,7 @@
 
         const formData = new FormData();
         formData.append('action', 'delete_daily');
+        // Saat menghapus, pastikan mencari string mentah di Sheet
         formData.append('tanggal', targetTglStr);
 
         fetch(scriptURL, { method: 'POST', body: formData })
