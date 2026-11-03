@@ -10,7 +10,6 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
   <script>
-        // Blokir interaksi dev tools (opsional, sesuai request lama)
         document.addEventListener("contextmenu", e => e.preventDefault());
         document.onkeydown = function (e) {
             if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 67 || e.keyCode === 74)) || (e.ctrlKey && (e.keyCode === 85 || e.keyCode === 83))) { e.preventDefault(); return false; }
@@ -319,6 +318,7 @@
       document.getElementById(screenId).classList.add('active');
     }
 
+    // Hanya digunakan untuk Pengamatan Baru (Bukan untuk fungsi Lanjut)
     function getHariFromDate(dateString) {
       const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
       const dateObj = new Date(dateString);
@@ -344,13 +344,13 @@
     function startObservation() {
       const pengamat = document.getElementById('inputPengamat').value.trim();
       const tempat = document.getElementById('inputTempat').value.trim();
-      const tglRaw = document.getElementById('inputTanggal').value;
+      const tglRaw = document.getElementById('inputTanggal').value; // Mengambil string mentah (contoh: 2026-11-01)
       
       if (!pengamat || !tempat || !tglRaw) { alert("Harap isi semua data (Nama, Tempat, dan Tanggal)!"); return; }
 
       sessionData.pengamat = pengamat;
       sessionData.tempat = tempat;
-      sessionData.tanggal = tglRaw;
+      sessionData.tanggal = tglRaw; // Menyimpan string mentah YYYY-MM-DD
       sessionData.hari = getHariFromDate(tglRaw);
 
       document.getElementById('lblPengamat').innerText = sessionData.pengamat;
@@ -371,23 +371,26 @@
       toggleView('chart');
     }
 
-    // Melanjutkan pengamatan menggunakan tanggal dari riwayat
+    // Melanjutkan pengamatan Murni berdasarkan string tekstual tanggal yang ditarik dari Database
     function continueObservation(targetTglStr, pengamat, tempat, hari) {
-      // Set sesi dengan tanggal historis
+      // 1. Kunci identitas pengamatan.
+      // Kita langsung set string mentahnya (misal: "2026-11-01") dan harinya tanpa perlu perhitungan Date() lagi.
       sessionData.pengamat = pengamat;
       sessionData.tempat = tempat;
-      sessionData.tanggal = targetTglStr;
+      sessionData.tanggal = targetTglStr; 
       sessionData.hari = hari;
 
+      // 2. Set Tampilan di Layar Observasi
       document.getElementById('lblPengamat').innerText = pengamat;
       document.getElementById('lblTempat').innerText = tempat;
-      document.getElementById('lblTanggal').innerText = targetTglStr; // Tampilkan tanggal riwayat
+      document.getElementById('lblTanggal').innerText = targetTglStr;
       document.getElementById('lblHari').innerText = hari;
       
       document.getElementById('printPengamat').innerText = pengamat;
       document.getElementById('printTempat').innerText = tempat;
       document.getElementById('printHariTanggal').innerText = `${hari}, ${targetTglStr}`;
 
+      // 3. Filter data berdasarkan string exact match
       const filteredData = allHistoryData.filter((row, index) => {
         if(index === 0) return false; 
         let tgl = row[1];
@@ -406,7 +409,6 @@
         waktu = formatWaktuFromSheet(waktu);
         
         const ket = row[6];
-        
         let baseActivity = ket;
         if (ket && String(ket).includes(" : ")) {
            baseActivity = ket.split(" : ")[0].trim();
@@ -536,7 +538,6 @@
     };
 
     function recordEvent(keterangan, isBaseActivity = true, captionText = "") {
-      // Waktu selalu mengambil waktu realtime saat ini
       let dateRaw = new Date();
       let h = String(dateRaw.getHours()).padStart(2,'0');
       let m = String(dateRaw.getMinutes()).padStart(2,'0');
@@ -567,7 +568,7 @@
       tbody.appendChild(tr);
       updateTableNumbers();
 
-      // Mengirim sessionData yang berisi tanggal riwayat, bukan tanggal hari ini
+      // Saat mengirim, sistem akan menggunakan sessionData.tanggal mentah tanpa diubah ke UTC
       kirimDataApi('record', { ...sessionData, waktu: timeStr, keterangan: fullText });
     }
 
@@ -610,6 +611,7 @@
         .catch(() => { if(status){ status.innerHTML = '<i class="bi bi-x-circle-fill"></i> Gagal terhubung!'; status.style.color = '#e74a3b'; } });
     }
 
+    // ========== BAGIAN HISTORY (GROUPING & DETAIL) ==========
     function loadHistory() {
       switchScreen('screen-history');
       const table = document.getElementById('historyTable');
@@ -777,7 +779,6 @@
       if (confirm("PERINGATAN: Yakin hapus SELURUH riwayat di database? (Tombol ini mereset file Spreadsheet ke kosong)")) {
         document.querySelector('#dataTable tbody').innerHTML = '';
         chart.data.labels = []; chart.data.datasets[0].data = []; chart.update();
-        // Memanggil API khusus untuk reset semua
         kirimDataApi('reset', {});
       }
     }
