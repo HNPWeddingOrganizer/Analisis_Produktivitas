@@ -411,12 +411,16 @@
     }
 
     // Fungsi pembantu untuk menentukan warna titik berdasarkan keterangan aktivitas
-function getColorByAktivitas(aktivitas) {
-  // Menggunakan includes() agar warna tetap hijau/merah meski ada tambahan caption
-  if (aktivitas.includes('Produktif')) return '#1cc88a'; 
-  if (aktivitas.includes('Idle Time') || aktivitas.includes('Menganggur')) return '#e74a3b'; 
-  return '#f6c23e'; 
-}
+// Fungsi pembantu untuk menentukan warna titik berdasarkan keterangan aktivitas
+    function getColorByAktivitas(aktivitas) {
+      // PENGAMAN: Jika data masih kosong/belum ada aktivitas, kembalikan warna default agar tidak error
+      if (!aktivitas) return '#f6c23e'; 
+      
+      // Menggunakan includes() agar warna tetap hijau/merah meski ada tambahan caption
+      if (aktivitas.includes('Produktif')) return '#1cc88a'; 
+      if (aktivitas.includes('Idle Time') || aktivitas.includes('Menganggur')) return '#e74a3b'; 
+      return '#f6c23e'; 
+    }
 
 function initCharts() {
       const ctx = document.getElementById('productivityChart').getContext('2d');
