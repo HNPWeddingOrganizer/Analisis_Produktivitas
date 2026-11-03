@@ -144,7 +144,7 @@
 
       <div class="card" id="button-group">
         <h4 style="margin-top:0; color: var(--primary);"><i class="bi bi-lightning-charge-fill" style="color:var(--warning);"></i> Catat Aktivitas:</h4>
-        <button onclick="recordEvent('Idle Time ( Menganggur)')" class="btn-danger"><i class="bi bi-pause-circle"></i> Idle Time (Menganggur)</button>
+        <button onclick="recordEvent('Idle Time (Waktu Menganggur)')" class="btn-danger"><i class="bi bi-pause-circle"></i> Idle Time (Menganggur)</button>
         <button onclick="recordEvent('Produktif')" class="btn-success"><i class="bi bi-play-circle"></i> Produktif</button>
         <span id="dynamic-buttons-container"></span>
       </div>
@@ -213,11 +213,11 @@
             <tr>
               <th style="width: 5%; text-align:center;">No</th>
               <th style="width: 15%;">Tanggal</th>
-              <th style="width: 15%;">Hari</th>
-              <th style="width: 20%;">Pengamat</th>
+              <th style="width: 10%;">Hari</th>
+              <th style="width: 15%;">Pengamat</th>
               <th style="width: 15%;">Tempat</th>
               <th style="width: 10%; text-align:center;">Jml Data</th>
-              <th style="width: 20%; text-align:center;">Aksi</th>
+              <th style="width: 30%; text-align:center;">Aksi</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -320,6 +320,65 @@
       document.getElementById('printTempat').innerText = sessionData.tempat;
       document.getElementById('printHariTanggal').innerText = `${sessionData.hari}, ${sessionData.tanggal}`;
 
+      // Bersihkan chart dan tabel jika ini pengamatan baru (bukan lanjutan)
+      document.querySelector('#dataTable tbody').innerHTML = '';
+      chart.data.labels = []; 
+      chart.data.datasets[0].data = []; 
+      chart.update();
+
+      switchScreen('screen-app');
+      toggleView('chart');
+    }
+
+    // Fungsi Melanjutkan Pengamatan dari Data Riwayat
+    function continueObservation(targetTglStr, pengamat, tempat, hari) {
+      // 1. Set Session Data dari riwayat yang dipilih
+      sessionData.pengamat = pengamat;
+      sessionData.tempat = tempat;
+      sessionData.tanggal = targetTglStr;
+      sessionData.hari = hari;
+
+      // 2. Tampilkan di UI Layar Observasi
+      document.getElementById('lblPengamat').innerText = pengamat;
+      document.getElementById('lblTempat').innerText = tempat;
+      document.getElementById('lblTanggal').innerText = targetTglStr;
+      document.getElementById('lblHari').innerText = hari;
+      
+      document.getElementById('printPengamat').innerText = pengamat;
+      document.getElementById('printTempat').innerText = tempat;
+      document.getElementById('printHariTanggal').innerText = `${hari}, ${targetTglStr}`;
+
+      // 3. Muat Data Lama ke dalam Chart dan Tabel Aktif
+      const filteredData = allHistoryData.filter((row, index) => {
+        if(index === 0) return false; 
+        let tgl = row[1];
+        let tglStr = (tgl && String(tgl).includes("T")) ? String(tgl).split("T")[0] : String(tgl);
+        return tglStr === targetTglStr;
+      });
+
+      chart.data.labels = [];
+      chart.data.datasets[0].data = [];
+      chart.options.scales.y.labels = ['Idle Time (Waktu Menganggur)', 'Produktif'];
+      const tbody = document.querySelector('#dataTable tbody');
+      tbody.innerHTML = '';
+
+      filteredData.forEach((row, idx) => {
+        const waktu = row[5];
+        const ket = row[6];
+
+        if (!chart.options.scales.y.labels.includes(ket)) { chart.options.scales.y.labels.push(ket); }
+        chart.data.labels.push(waktu);
+        chart.data.datasets[0].data.push(ket);
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td style="text-align:center;" class="row-num"></td><td>${waktu}</td><td>${ket}</td><td class="no-print" style="text-align:center;"><button class="btn-outline" onclick="deleteDataPoint(this, '${waktu}')"><i class="bi bi-trash-fill"></i> Hapus</button></td>`;
+        tbody.appendChild(tr);
+      });
+
+      updateTableNumbers();
+      chart.update();
+
+      // 4. Pindah ke layar observasi
       switchScreen('screen-app');
       toggleView('chart');
     }
@@ -435,9 +494,10 @@
                 <td>${groupedData[tglKey].pengamat}</td>
                 <td>${groupedData[tglKey].tempat}</td>
                 <td style="text-align:center;"><span style="background:var(--primary);color:white;padding:2px 8px;border-radius:10px;font-size:12px;">${groupedData[tglKey].count} data</span></td>
-                <td style="text-align:center;">
-                  <button class="btn-info" onclick="viewHistoryDetail('${tglKey}')" style="padding: 5px 10px; font-size:12px;" title="Lihat Detail"><i class="bi bi-eye-fill"></i> Detail</button>
-                  <button class="btn-danger" onclick="deleteDailyHistory('${tglKey}')" style="padding: 5px 10px; font-size:12px;" title="Hapus Riwayat Hari Ini"><i class="bi bi-trash3-fill"></i></button>
+                <td style="text-align:center; display:flex; gap:5px; justify-content:center;">
+                  <button class="btn-success" onclick="continueObservation('${tglKey}', '${groupedData[tglKey].pengamat}', '${groupedData[tglKey].tempat}', '${groupedData[tglKey].hari}')" style="padding: 5px 8px; font-size:11px;" title="Lanjutkan Pengamatan"><i class="bi bi-play-circle-fill"></i> Lanjut</button>
+                  <button class="btn-info" onclick="viewHistoryDetail('${tglKey}')" style="padding: 5px 8px; font-size:11px;" title="Lihat Detail"><i class="bi bi-eye-fill"></i> Detail</button>
+                  <button class="btn-danger" onclick="deleteDailyHistory('${tglKey}')" style="padding: 5px 8px; font-size:11px;" title="Hapus Riwayat Hari Ini"><i class="bi bi-trash3-fill"></i></button>
                 </td>
               `;
               tbody.appendChild(tr);
@@ -455,7 +515,7 @@
     function viewHistoryDetail(targetTglStr) {
       // 1. Filter Data yang Sesuai
       const filteredData = allHistoryData.filter((row, index) => {
-        if(index === 0) return false; // Lewati header sheet
+        if(index === 0) return false; 
         let tgl = row[1];
         let tglStr = (tgl && String(tgl).includes("T")) ? String(tgl).split("T")[0] : String(tgl);
         return tglStr === targetTglStr;
