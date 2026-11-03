@@ -407,19 +407,70 @@
       toggleView('chart');
     }
 
-    const ctx = document.getElementById('productivityChart').getContext('2d');
-    let chart = new Chart(ctx, {
-      type: 'line',
-      data: { labels: [], datasets: [{ label: 'Aktivitas', data: [], borderColor: '#4e73df', backgroundColor: 'rgba(78, 115, 223, 0.1)', borderWidth: 3, pointBackgroundColor: '#fff', pointRadius: 5, fill: true, stepped: 'middle' }] },
-      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { type: 'category', labels: ['Produktif','Idle Time (Waktu Menganggur)'], offset: true } } }
-    });
+    // Fungsi pembantu untuk menentukan warna titik berdasarkan keterangan aktivitas
+function getColorByAktivitas(aktivitas) {
+  if (aktivitas === 'Produktif') return '#1cc88a'; // Warna Hijau (Success)
+  if (aktivitas === 'Idle Time (Waktu Menganggur)') return '#e74a3b'; // Warna Merah (Danger)
+  return '#f6c23e'; // Warna Kuning (Warning) untuk aktivitas manual/baru lainnya
+}
 
-    const histCtx = document.getElementById('historyDetailChart').getContext('2d');
-    let historyChart = new Chart(histCtx, {
-      type: 'line',
-      data: { labels: [], datasets: [{ label: 'Aktivitas', data: [], borderColor: '#1cc88a', backgroundColor: 'rgba(28, 200, 138, 0.1)', borderWidth: 3, pointBackgroundColor: '#fff', pointRadius: 5, fill: true, stepped: 'middle' }] },
-      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { type: 'category', labels: ['Produktif','Idle Time (Waktu Menganggur)'], offset: true } } }
-    });
+const ctx = document.getElementById('productivityChart').getContext('2d');
+let chart = new Chart(ctx, {
+  type: 'line',
+  data: { 
+    labels: [], 
+    datasets: [{ 
+      label: 'Aktivitas', 
+      data: [], 
+      borderColor: '#4e73df', // Warna utama garis grafik 
+      backgroundColor: 'rgba(78, 115, 223, 0.1)', 
+      borderWidth: 2, // Ketebalan garis disesuaikan
+      fill: true, 
+      tension: 0.4, // Membuat garis melengkung lembut
+      stepped: false, // Mematikan bentuk garis kotak/kaku
+      pointRadius: 3, // Ukuran titik diperkecil
+      pointHoverRadius: 6,
+      pointBackgroundColor: function(context) {
+        let aktivitas = context.dataset.data[context.dataIndex];
+        return getColorByAktivitas(aktivitas);
+      },
+      pointBorderColor: function(context) {
+        let aktivitas = context.dataset.data[context.dataIndex];
+        return getColorByAktivitas(aktivitas);
+      }
+    }] 
+  },
+  options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { type: 'category', labels: ['Produktif','Idle Time (Waktu Menganggur)'], offset: true } } }
+});
+
+const histCtx = document.getElementById('historyDetailChart').getContext('2d');
+let historyChart = new Chart(histCtx, {
+  type: 'line',
+  data: { 
+    labels: [], 
+    datasets: [{ 
+      label: 'Aktivitas', 
+      data: [], 
+      borderColor: '#1cc88a', 
+      backgroundColor: 'rgba(28, 200, 138, 0.1)', 
+      borderWidth: 2, 
+      fill: true, 
+      tension: 0.4, // Membuat garis melengkung lembut
+      stepped: false, // Mematikan bentuk garis kotak/kaku
+      pointRadius: 3, // Ukuran titik diperkecil
+      pointHoverRadius: 6,
+      pointBackgroundColor: function(context) {
+        let aktivitas = context.dataset.data[context.dataIndex];
+        return getColorByAktivitas(aktivitas);
+      },
+      pointBorderColor: function(context) {
+        let aktivitas = context.dataset.data[context.dataIndex];
+        return getColorByAktivitas(aktivitas);
+      }
+    }] 
+  },
+  options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { type: 'category', labels: ['Produktif','Idle Time (Waktu Menganggur)'], offset: true } } }
+});
 
     function recordEvent(keterangan) {
       const timeStr = new Date().toLocaleTimeString('id-ID');
