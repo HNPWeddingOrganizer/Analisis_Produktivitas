@@ -538,10 +538,10 @@ function initCharts() {
       let fullText = keterangan;
       
       if (isBaseActivity) {
-        lastBaseActivity = keterangan; // Simpan aktivitas dasar
+        lastBaseActivity = keterangan; // Simpan aktivitas dasar (contoh: "Produktif")
       } else {
-        baseActivity = lastBaseActivity; // Gunakan aktivitas dasar untuk Chart sumbu Y
-        fullText = lastBaseActivity + " : " + captionText; // Gunakan fulltext untuk tabel/sheet
+        baseActivity = lastBaseActivity; // Chart tetap di garis "Produktif"
+        fullText = lastBaseActivity + " : " + captionText; // Tabel dan Sheet menggunakan teks lengkap
       }
 
       // Pastikan label dasar ada di sumbu Y chart
@@ -550,27 +550,26 @@ function initCharts() {
       }
       
       chart.data.labels.push(timeStr);
-      // Simpan sebagai object agar Tooltip bisa membaca text panjang, tapi Sumbu Y baca text pendek
+      // Simpan sebagai object agar garis sejajar, tetapi menyimpan caption di latar belakang
       chart.data.datasets[0].data.push({ x: timeStr, y: baseActivity, caption: fullText });
       chart.update();
 
-      // Tabel tetap menampilkan keterangan panjang
+      // Tabel menampilkan keterangan panjang
       const tbody = document.querySelector('#dataTable tbody');
       const tr = document.createElement('tr');
       tr.innerHTML = `<td style="text-align:center;" class="row-num"></td><td>${timeStr}</td><td>${fullText}</td><td class="no-print table-actions" style="text-align:center;"><button class="btn-outline" onclick="deleteDataPoint(this, '${timeStr}')"><i class="bi bi-trash-fill"></i> Hapus</button></td>`;
       tbody.appendChild(tr);
       updateTableNumbers();
 
-      // Sheet tetap menerima keterangan panjang
+      // Spreadsheet menerima keterangan panjang
       kirimDataApi('record', { ...sessionData, waktu: timeStr, keterangan: fullText });
     }
 
-    // Fungsi Add Caption
     function addCaption() {
       const input = document.getElementById('manualInput');
       const caption = input.value.trim();
       if (caption) { 
-        // Panggil recordEvent dengan false, dan kirimkan teks captionnya
+        // Panggil recordEvent dengan false (bukan tombol utama), dan kirimkan teks captionnya di parameter ke-3
         recordEvent(null, false, caption); 
         input.value = ''; 
       }
