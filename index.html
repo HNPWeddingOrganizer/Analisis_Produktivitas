@@ -569,7 +569,7 @@ function initCharts() {
       const input = document.getElementById('manualInput');
       const caption = input.value.trim();
       if (caption) { 
-        // Panggil recordEvent dengan false (bukan tombol utama), dan kirimkan teks captionnya di parameter ke-3
+        // Panggil recordEvent: null (karena tidak ada tombol baru yang diklik), false (bukan aktivitas dasar), dan kirim caption aslinya
         recordEvent(null, false, caption); 
         input.value = ''; 
       }
